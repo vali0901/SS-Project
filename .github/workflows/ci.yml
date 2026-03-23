@@ -92,3 +92,28 @@ jobs:
 
       - name: Security scan with Bandit
         run: bandit receiver.py -ll
+
+  # =============================================
+  # Job 4: Verificare de sintaxa Python (Receiver)
+  # =============================================
+  check-syntax-python:
+    name: Python Syntax Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install pylint bandit
+          # opencv-python-headless se folosește în CI (fără display)
+          pip install paho-mqtt opencv-python-headless numpy
+
+      - name: Smoke test
+        run: python -m py_compile receiver.py
