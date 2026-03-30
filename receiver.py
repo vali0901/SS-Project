@@ -2,12 +2,14 @@ import paho.mqtt.client as mqtt
 import cv2
 import numpy as np
 import threading
+import os
 
 # Configuration
-BROKER = "192.168.50.239"  # TODO: Modificați cu IP-ul brokerului vostru
-PORT = 8883
-TOPIC_IMAGE = "ssproject/images"
-TOPIC_COMMAND = "ssproject/commands"
+BROKER = os.getenv("MQTT_BROKER")
+PORT = os.getenv("MQTT_PORT")
+TOPIC_IMAGE = os.getenv("MQTT_TOPIC_IMAGE")
+TOPIC_COMMAND = os.getenv("MQTT_TOPIC_COMMAND")
+
 
 # Global flags
 running = True
