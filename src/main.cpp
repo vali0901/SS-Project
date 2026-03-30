@@ -8,36 +8,7 @@
 #include <PubSubClient.h>
 // CAMERA_MODEL is defined in platformio.ini
 #include "../include/camera_pins.h"
-
-// ===========================
-// Configuration
-// ===========================
-const char* ssid     = "";       // TODO: Modificați cu SSID-ul rețelei voastre
-const char* password = "";     // TODO: Modificați cu parola rețelei voastre
-const char* mqtt_server = ""; // TODO: Modificați cu IP-ul calculatorului (ip addr / ipconfig)
-const int mqtt_port = 8883;
-
-const char* ca_cert = "\
------BEGIN CERTIFICATE-----\
-MIIDETCCAfmgAwIBAgIUBq4bNA3i3eo6dTNVpY0a8uUrXWowDQYJKoZIhvcNAQEL\
-BQAwGDEWMBQGA1UEAwwNU1MtUHJvamVjdC1DQTAeFw0yNjAzMzAxODAxMjVaFw0z\
-NjAzMjcxODAxMjVaMBgxFjAUBgNVBAMMDVNTLVByb2plY3QtQ0EwggEiMA0GCSqG\
-SIb3DQEBAQUAA4IBDwAwggEKAoIBAQDO175w/89lIKy3jcw4jgj4nVQdESLJREFV\
-DukCVL2Z6nvZ0xsefNt1GpgMyIoGAmjZ6Wo65ucxKiMAXXNSRH+O0A0p8akXEILq\
-NEsn9MsagXPq86jx6v6sEqsws8H39DYIkQx1VSF3gfcRyEbuyhUOLLJqRZuVjplG\
-BzyzvJ5J+NJkAcTHCYdepyi6UVv7+h2LeEY1HLuVwivTVEpP+fhhPAIWQOEU2Mvc\
-WlLNmh/VCJBfRuaon8wpS9nDqHIr6m6EPJpcjLCDw+kI42v2gaHz+gjMW6IFw4Cc\
-e618M2SNMtmn/7KxAlAuf+J7gIYZiu+O34cPVwPRv65ecSy6PoKVAgMBAAGjUzBR\
-MB0GA1UdDgQWBBSmCaPboZ1d2spFgGs8DGEDxix+ajAfBgNVHSMEGDAWgBSmCaPb\
-oZ1d2spFgGs8DGEDxix+ajAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUA\
-A4IBAQA8miRdQyoEX3UJv/hN1BOqy/1iPejd4T4Ea7Ok4lcBXGrBQ4zrGER26bHP\
-9jglZa5eDtl6Gxe+IMSiMB2DzEJd4VQNUOuIr/eFduvvdnhfJbLUjo8Bu3dTOI1Q\
-kYnAvYwCpkZLj2qW1bhrAbd0N1Lt6TBPLfxQTVzm20wedsumxG4cB0OImUbM2rp5\
-Eid+4bmN6tbhbi0Jtklw4gZOaDEuRHDV+aVM5yPquzfk66klcScAQuBlOALLy/2C\
-Iqocg06gbEiIks95htbY+HlPLS/HHDh/F7ND55ohvT0m0IOKgwwX20GvNqfo8TjR\
-NH56dKsKD514QZtygJRT4Y2mCFM+\
------END CERTIFICATE-----\
-";
+#include "../include/secrets.h"
 
 // Topics
 const char* TOPIC_COMMAND = "ssproject/commands";

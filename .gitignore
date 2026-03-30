@@ -17,3 +17,4 @@ Thumbs.db
 # SS-Project
 certs/
 .env
+include/secrets.h
