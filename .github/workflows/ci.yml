@@ -15,6 +15,9 @@ jobs:
   build-firmware:
     name: Build ESP32 Firmware
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./embedded
     permissions:
       contents: write
     steps:
@@ -56,6 +59,9 @@ jobs:
   analyze-firmware:
     name: Static Analysis (C++)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./embedded
 
     steps:
       - name: Checkout code
@@ -83,6 +89,9 @@ jobs:
   check-python:
     name: Python Lint & Security
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./embedded
 
     steps:
       - name: Checkout code
@@ -112,6 +121,9 @@ jobs:
   check-syntax-python:
     name: Python Syntax Check
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./embedded
 
     steps:
       - name: Checkout code
@@ -137,6 +149,9 @@ jobs:
   fuzz-python:
     name: Python Fuzzing
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./embedded
 
     steps:
       - name: Checkout code
