@@ -59,7 +59,7 @@ jobs:
         with:
           node-version: "22"
           cache: "yarn"
-          cache-dependency-path: yarn.lock
+          cache-dependency-path: web/client/yarn.lock
 
       - name: Install client dependencies
         working-directory: web/client
