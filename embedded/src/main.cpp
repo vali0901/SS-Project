@@ -8,7 +8,20 @@
 #include <PubSubClient.h>
 // CAMERA_MODEL is defined in platformio.ini
 #include "../include/camera_pins.h"
+
+#if __has_include("../include/secrets.h")
 #include "../include/secrets.h"
+#else 
+// No cert in pipeline build, maybe move the cert to a file loaded at runtime ...
+const char ca_cert[] = {0}; 
+
+// No hardcoded either
+const char* ssid = "";
+const char* password = "";
+const char* mqtt_server = "";
+const int mqtt_port = 8883;
+
+#endif
 
 // Topics
 const char* TOPIC_COMMAND = "ssproject/commands";
