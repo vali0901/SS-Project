@@ -1,0 +1,46 @@
+<resources>
+    <string name="app_name">SS Project</string>
+
+    <!-- Setup Activity string declarations -->
+    <string name="setup_title">MQTT Server Setup</string>
+    <string name="setup_hint_ip">IP</string>
+    <string name="setup_hint_port">Port</string>
+    <string name="setup_ip_digits">1234567890.</string>
+    <string name="setup_port_digits">1234567890</string>
+    <string name="setup_connect_btn">Connect</string>
+
+    <!-- Main Activity string declarations -->
+    <string name="main_status_broker_address_format">%1$s:%2$s</string>
+    <string name="main_status_disconnected">Status: Disconnected</string>
+    <string name="main_status_connected">Status: Connected</string>
+    <string name="main_live_switch_title">LIVE MODE</string>
+    <string name="main_capture_image">Capture image</string>
+    <string name="main_auto_send_switch_title">Auto send</string>
+    <string name="main_auto_send_interval_title">Interval (sec)</string>
+    <string name="main_auto_send_interval_default_value">10</string>
+    <string name="main_quality_slider_title">Image quality</string>
+    <string name="main_logs_default_text">Logs: Waiting for commands…</string>
+    <string name="main_logs_entry_format">%1$s\n[%2$s] %3$s</string>
+    <string name="main_logs_live_mode_off_entry">Live mode: OFF</string>
+    <string name="main_logs_live_mode_on_entry">Live mode: ON</string>
+    <string name="main_logs_auto_send_off_entry">Auto send: OFF</string>
+    <string name="main_logs_auto_send_on_entry">Auto send: ON (%1$ds interval)</string>
+    <string name="main_logs_image_capture_requested_entry">Image capture requested…</string>
+    <string name="main_logs_image_sent_entry">Image sent to broker (%1$.2f KB)</string>
+    <string name="main_logs_image_capture_error_entry">Error processing image (check detailed logs)</string>
+    <string name="main_logs_command_received_entry">Command received: %1$s</string>
+    <string name="main_logs_command_capture_ignored_entry">Command ignored (Live mode active)</string>
+    <string name="main_logs_command_unknown_entry">Unknown command received</string>
+
+    <!-- Permission related string declarations -->
+    <string name="permission_camera_rationale_title">Camera permission</string>
+    <string name="permission_camera_rationale_description">Camera access is required to capture photos that will be sent to the MQTT broker.</string>
+    <string name="permission_camera_denied_title">Camera features unavailable</string>
+    <string name="permission_camera_denied_description">Camera features are unavailable because this app needs permissions that were not given.</string>
+
+    <!-- Permission Handler string declarations -->
+    <string name="permission_rationale_negative_button">Cancel</string>
+    <string name="permission_rationale_positive_button">OK</string>
+    <string name="permissions_denied_settings_button">Go to Settings</string>
+    <string name="permissions_denied_positive_button">OK</string>
+</resources>
