@@ -31,6 +31,12 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Run Semgrep (static analysis)
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install semgrep
+          semgrep --config p/default .
+
       - name: Run Unit Tests
         run: ./gradlew test
 
