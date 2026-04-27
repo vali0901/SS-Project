@@ -34,6 +34,18 @@ jobs:
       - name: Run Unit Tests
         run: ./gradlew test
 
+      - name: Run Instrumented Tests
+        uses: reactivecircle/android-emulator-runner@v2
+        with:
+          api-level: 31
+          target: google_apis
+          arch: x86_64
+          profile: Nexus 6
+          cores: 2
+          ram-size: 2048M
+          disk-size: 4096M
+          script: cd mobile && ./gradlew connectedAndroidTest
+
       - name: Build APK (Debug)
         run: ./gradlew assembleDebug
 
