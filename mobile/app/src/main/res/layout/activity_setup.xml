@@ -66,6 +66,15 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/setup_card_view_tls_switch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:text="Conexiune securizată (mTLS)"
+                android:checked="false" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/setup_card_view_connect_btn"
                 android:layout_width="wrap_content"

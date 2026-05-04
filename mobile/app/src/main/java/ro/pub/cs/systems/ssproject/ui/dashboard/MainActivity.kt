@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import ro.pub.cs.systems.ssproject.R
 import ro.pub.cs.systems.ssproject.mqtt.MqttConstants
 import ro.pub.cs.systems.ssproject.mqtt.MqttHandler
+import ro.pub.cs.systems.ssproject.mqtt.TlsHelper
 import ro.pub.cs.systems.ssproject.utils.ImageUtils
 import ro.pub.cs.systems.ssproject.utils.PermissionHandler
 import java.io.ByteArrayOutputStream
@@ -85,9 +86,22 @@ class MainActivity : AppCompatActivity() {
         val brokerPort = intent.getStringExtra("brokerPort")!!
         statusBrokerAddress.text = getString(R.string.main_status_broker_address_format, brokerIp, brokerPort)
 
+        val useTls = intent.getBooleanExtra("useTls", false)
+
+        val sslSocketFactory = if (useTls) {
+            TlsHelper.createMtlsSocketFactory(
+                context = this,
+                trustStoreResId = R.raw.truststore,
+                keyStoreResId = R.raw.keystore
+            )
+        } else {
+            null
+        }
+
         mqttHandler = MqttHandler(
             brokerIp,
             brokerPort,
+            sslSocketFactory = sslSocketFactory,
             isConnectedCallback = { isConnected ->
                 runOnUiThread {
                     handleConnectionStateChange(isConnected)

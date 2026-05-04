@@ -10,14 +10,18 @@ import org.eclipse.paho.client.mqttv3.MqttClient
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.MqttMessage
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
+import javax.net.ssl.SSLSocketFactory
 
 class MqttHandler(
     brokerIp: String,
     brokerPort: String,
+    private val sslSocketFactory: SSLSocketFactory? = null,
     private val isConnectedCallback: (Boolean) -> Unit,
     private val onCommandReceived: (String) -> Unit
 ) : MqttCallback {
-    private val brokerUrl = "tcp://$brokerIp:$brokerPort"
+    // Determinăm protocolul pe baza prezenței SSLSocketFactory
+    private val protocol = if (sslSocketFactory != null) "ssl" else "tcp"
+    private val brokerUrl = "$protocol://$brokerIp:$brokerPort"
     private val clientId = "${Build.MANUFACTURER}_${Build.MODEL}_${MqttClient.generateClientId()}"
     private var client: MqttClient? = null
 
@@ -35,6 +39,11 @@ class MqttHandler(
                     isCleanSession = true
                     connectionTimeout = 10
                     keepAliveInterval = 60
+
+                    // Configurarea TLS dacă SSLSocketFactory este disponibil
+                    if (sslSocketFactory != null) {
+                        socketFactory = sslSocketFactory
+                    }
                 }
 
                 client?.connect(options)
