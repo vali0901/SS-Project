@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import fallbackImage from '../../assets/photo-fallback.svg';
+import { getMediaUrl } from '../../utils/api';
 
 interface PhotoCardProps {
   photoId: string;
@@ -57,7 +58,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
       <div className="bg-white rounded-lg shadow-md overflow-hidden transition-all hover:shadow-lg relative">
         <div className="relative h-48 cursor-pointer" onClick={toggleZoom}>
           <img
-            src={imageError ? fallbackImage : imageUrl}
+            src={imageError ? fallbackImage : getMediaUrl(imageUrl)}
             alt={altText}
             onError={handleImageError}
             className="w-full h-full object-cover"
@@ -130,7 +131,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
 
             <div className="p-4 pt-20">
               <img
-                src={imageError ? fallbackImage : imageUrl}
+                src={imageError ? fallbackImage : getMediaUrl(imageUrl)}
                 alt={altText}
                 className="max-w-full max-h-[65vh] object-contain mx-auto rounded-md"
               />

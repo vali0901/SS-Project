@@ -3,11 +3,13 @@ package routes
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/golang-jwt/jwt/v4"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -98,29 +100,18 @@ func withCORS(next http.Handler) http.Handler {
 	})
 }
 
-// TODO: Implement authentication - See docs/AUTH_IMPLEMENTATION.md
-// noAuth is a placeholder middleware that passes all requests through without authentication.
-// Replace this with withAuth once you implement JWT or Basic authentication.
-func noAuth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// No authentication - pass through with placeholder context values
-		ctx := context.WithValue(r.Context(), "email", "guest@example.com")
-		ctx = context.WithValue(ctx, "role", "user")
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-// TODO: Implement JWT authentication - See docs/AUTH_IMPLEMENTATION.md
-// Example implementation commented below:
-/*
-import "github.com/golang-jwt/jwt/v4"
-
+// withAuth is a middleware that validates the JWT token from the Authorization header.
 func withAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Parse the JWT token from the Authorization header
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			http.Error(w, "Authorization header missing", http.StatusUnauthorized)
+			return
+		}
+
+		if len(authHeader) < len("Bearer ") {
+			http.Error(w, "Invalid authorization header format", http.StatusUnauthorized)
 			return
 		}
 
@@ -136,7 +127,7 @@ func withAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		// Extract email from token claims
+		// Extract email and role from token claims
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok || !token.Valid {
 			http.Error(w, "Invalid token claims", http.StatusUnauthorized)
@@ -144,18 +135,16 @@ func withAuth(next http.Handler) http.Handler {
 		}
 		email, ok := claims["email"].(string)
 		if !ok {
-			http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+			http.Error(w, "Invalid token claims: email missing", http.StatusUnauthorized)
 			return
 		}
 		role, ok := claims["role"].(string)
 		if !ok {
-			http.Error(w, "Invalid token claims", http.StatusUnauthorized)
-			return
+			role = "user" // Default role
 		}
-		// Store the email in the request context
+		// Store the email and role in the request context
 		ctx := context.WithValue(r.Context(), "email", email)
 		ctx = context.WithValue(ctx, "role", role)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
-*/

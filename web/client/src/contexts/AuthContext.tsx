@@ -1,10 +1,5 @@
-// TODO: Implement authentication - See docs/AUTH_IMPLEMENTATION.md
-// This file currently bypasses authentication. To implement real auth:
-// 1. Remove the auto-login in useEffect
-// 2. Validate JWT tokens from the backend
-// 3. Store and use real tokens for API requests
-
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { jwtDecode } from 'jwt-decode';
 
 interface AuthContextType {
   isLoggedIn: boolean;
@@ -15,13 +10,17 @@ interface AuthContextType {
   logout: () => void;
 }
 
-
+interface JwtPayload {
+  email: string;
+  role: string;
+  exp: number;
+}
 
 const AuthContext = createContext<AuthContextType>({
   isLoggedIn: false,
   token: null,
   loading: true,
-  isAdmin: true,
+  isAdmin: false,
   login: () => { },
   logout: () => { },
 });
@@ -34,33 +33,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // TODO: Implement real authentication
-  // Currently auto-logging in as guest (no real authentication)
   useEffect(() => {
-    // Auto-login as guest for development (authentication not implemented)
-    setToken('guest-placeholder-token');
-    setIsLoggedIn(true);
-    setIsAdmin(true);
-    setLoading(false);
-
-    // Original implementation (uncomment when implementing real auth):
-    /*
     const storedToken = localStorage.getItem('token');
     if (storedToken) {
-      setToken(storedToken);
-      setIsLoggedIn(true);
-      setIsAdmin(true);
+      try {
+        const claims = jwtDecode<JwtPayload>(storedToken);
+        if (claims && claims.exp * 1000 > Date.now()) {
+          setToken(storedToken);
+          setIsLoggedIn(true);
+          setIsAdmin(claims.role === 'admin');
+        } else {
+          localStorage.removeItem('token');
+        }
+      } catch (e) {
+        localStorage.removeItem('token');
+      }
     }
     setLoading(false);
-    */
   }, []);
 
   const login = (newToken: string) => {
     localStorage.setItem('token', newToken);
     setToken(newToken);
     setIsLoggedIn(true);
-
-    setIsAdmin(true);
+    
+    try {
+      const claims = jwtDecode<JwtPayload>(newToken);
+      setIsAdmin(claims?.role === 'admin');
+    } catch (e) {
+      setIsAdmin(false);
+    }
   };
 
   const logout = () => {
