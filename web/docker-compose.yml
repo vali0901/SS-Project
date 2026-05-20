@@ -4,12 +4,10 @@ services:
     build: ./server
     user: "${UID}:${GID}"
     container_name: go-api
-    image: stefandarius/mqtt-ss-api:latest
+    image: server
     env_file: .env
     environment:
-      - MQTT_HOST_IP=${HOST_IP:-host.docker.internal}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - MQTT_HOST_IP=broker
     depends_on:
       - mongo-db
       - broker
@@ -24,6 +22,23 @@ services:
       - web.crt
       - web.key
 
+  client:
+    image: node:22-alpine
+    user: "${UID}:${GID}"
+    container_name: client
+    working_dir: /app
+    volumes:
+      - ./client:/app
+    ports:
+      - "5173:5173"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    command: sh -c "yarn install && yarn dev:poll --host 0.0.0.0 --port 5173"
+    networks:
+      - backend
+    depends_on:
+      - go-api
+
   broker:
     user: "${UID}:${GID}"
     image: eclipse-mosquitto:latest
@@ -31,7 +46,6 @@ services:
     hostname: broker
     ports:
       - "8883:8883"
-      - "1883:1883"
     volumes:
       - ./broker/mosquitto.conf:/mosquitto/config/mosquitto.conf
     networks:
@@ -43,6 +57,7 @@ services:
 
   mongo-db:
     container_name: mongo-db
+    hostname: mongo-db
     image: mongo:latest
     env_file: .env
     command: ["--auth"]
