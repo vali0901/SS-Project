@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DeviceCard from '../../components/devicesCards';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContextState';
 import { apiFetch } from '../../utils/api';
 
 // Interface for device data

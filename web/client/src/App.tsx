@@ -7,7 +7,8 @@ import PhotosPage from './pages/photosPage';
 import DevicesPage from './pages/devicesPage';
 import StatisticsPage from './pages/statisticsPage';
 import ProtectedRoute from './components/ProtectedRoute';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './contexts/AuthContextState';
 
 const Layout = () => {
   const navigate = useNavigate();

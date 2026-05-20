@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '../../contexts/AuthContextState';
 import { apiFetch } from '../../utils/api';
 import {
     BarChart,
@@ -51,11 +51,7 @@ const StatisticsPage: React.FC = () => {
     const [startDate, setStartDate] = useState(thirtyDaysAgo.toISOString().slice(0, 10));
     const [endDate, setEndDate] = useState(today.toISOString().slice(0, 10));
 
-    useEffect(() => {
-        fetchData();
-    }, [startDate, endDate]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
@@ -87,7 +83,11 @@ const StatisticsPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [startDate, endDate, token]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     // Process data for charts
     const getControlStats = () => {
@@ -252,7 +252,7 @@ const StatisticsPage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Simple Summary Cards */}
+                    {/* Summary Cards */}
                     <div className="col-span-1 md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
                             <span className="block text-sm text-blue-600 font-medium">Total Files</span>

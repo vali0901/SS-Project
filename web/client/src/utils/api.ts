@@ -14,3 +14,12 @@ const buildUrl = (path: string) => {
 
 export const apiFetch = (path: string, init?: RequestInit) => fetch(buildUrl(path), init);
 
+export const getMediaUrl = (path: string) => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  // If it already starts with the API_BASE_URL, return as is
+  if (path.startsWith(API_BASE_URL)) return path;
+  // Otherwise build the full URL through the proxy
+  return buildUrl(path);
+};
+

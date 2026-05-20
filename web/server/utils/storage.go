@@ -28,12 +28,12 @@ func SaveToLocal(data []byte, keyName string) error {
 
 func GetLocalURL(keyName string) string {
 	// construct URL assuming the server serves /uploads/ at root
-	// e.g. http://localhost:8080/uploads/photos/123.png
-	// The frontend runs on a different port, so we need a full URL
-	// Get the server's external URL from environment or use default
+	// e.g. /uploads/photos/123.png
+	// Get the server's base URL from environment (e.g., /api)
 	baseURL := os.Getenv("API_BASE_URL")
 	if baseURL == "" {
-		baseURL = "http://localhost:8080"
+		// Default to relative path starting with /uploads/
+		return fmt.Sprintf("/uploads/%s", keyName)
 	}
 	// Remove trailing slash if present
 	baseURL = strings.TrimSuffix(baseURL, "/")

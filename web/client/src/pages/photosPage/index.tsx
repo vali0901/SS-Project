@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PhotoCard from '../../components/photosCards';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContextState';
 import { apiFetch } from '../../utils/api';
-
 // Interface for device data
 interface Device {
   id: string;
@@ -10,6 +9,7 @@ interface Device {
   device_name: string;
   device_status: string;
 }
+
 
 // Interface for photo data
 interface Photo {
