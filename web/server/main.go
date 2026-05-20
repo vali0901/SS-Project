@@ -2,14 +2,14 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-	"crypto/tls"
-    "crypto/x509"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/otiai10/gosseract/v2"
@@ -20,30 +20,27 @@ import (
 	"mqtt-streaming-server/routes"
 )
 
-// TODO: Implement mTLS security
-// See docs/SECURITY_IMPLEMENTATION.md for instructions on how to configure TLS
-
 func NewTLSConfig() *tls.Config {
-    // Încărcarea certificatului CA
-    certpool := x509.NewCertPool()
-    pemCerts, err := os.ReadFile("/run/secrets/ca.crt")
-    if err != nil {
-        panic(err)
-    }
-    certpool.AppendCertsFromPEM(pemCerts)
- 
-    // Încărcarea certificatului de client
-    cert, err := tls.LoadX509KeyPair("/run/secrets/web.crt", "/run/secrets/web.key")
-    if err != nil {
-        panic(err)
-    }
- 
-    return &tls.Config{
-        RootCAs:            certpool,
-        ClientCAs:          certpool,
-        Certificates:       []tls.Certificate{cert},
-        InsecureSkipVerify: false,
-    }
+	// Încărcarea certificatului CA
+	certpool := x509.NewCertPool()
+	pemCerts, err := os.ReadFile("/run/secrets/ca.crt")
+	if err != nil {
+		panic(err)
+	}
+	certpool.AppendCertsFromPEM(pemCerts)
+
+	// Încărcarea certificatului de client
+	cert, err := tls.LoadX509KeyPair("/run/secrets/web.crt", "/run/secrets/web.key")
+	if err != nil {
+		panic(err)
+	}
+
+	return &tls.Config{
+		RootCAs:            certpool,
+		ClientCAs:          certpool,
+		Certificates:       []tls.Certificate{cert},
+		InsecureSkipVerify: false,
+	}
 }
 
 func main() {
@@ -66,8 +63,6 @@ func main() {
 
 	fmt.Println("Connected to MongoDB!")
 
-	
-
 	c := make(chan os.Signal, 1)
 
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
@@ -78,10 +73,10 @@ func main() {
 	brokerHandler := broker.NewBrokerHandler(db, ocrClient)
 
 	tlsconfig := NewTLSConfig()
- 
-    opts := mqtt.NewClientOptions()
-    opts.AddBroker("ssl://broker:8883")
-    opts.SetClientID("web").SetTLSConfig(tlsconfig)
+
+	opts := mqtt.NewClientOptions()
+	opts.AddBroker("ssl://broker:8883")
+	opts.SetClientID("web").SetTLSConfig(tlsconfig)
 
 	// Start the connection
 	client := mqtt.NewClient(opts)

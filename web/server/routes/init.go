@@ -40,7 +40,7 @@ func handleBrokerInfo(w http.ResponseWriter, r *http.Request) {
 
 	// Get the server's local IP address
 	ip := getOutboundIP()
-	port := "1883" // Default MQTT port
+	port := "8883" // Default MQTT port mTls
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
@@ -159,4 +159,3 @@ func withAuth(next http.Handler) http.Handler {
 	})
 }
 */
-
