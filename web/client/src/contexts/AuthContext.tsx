@@ -1,31 +1,7 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
-
-interface AuthContextType {
-  isLoggedIn: boolean;
-  token: string | null;
-  loading: boolean;
-  isAdmin: boolean;
-  login: (token: string) => void;
-  logout: () => void;
-}
-
-interface JwtPayload {
-  email: string;
-  role: string;
-  exp: number;
-}
-
-const AuthContext = createContext<AuthContextType>({
-  isLoggedIn: false,
-  token: null,
-  loading: true,
-  isAdmin: false,
-  login: () => { },
-  logout: () => { },
-});
-
-export const useAuth = () => useContext(AuthContext);
+import { AuthContext } from './AuthContextState';
+import type { AuthContextType, JwtPayload } from './AuthContextState';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null);
@@ -45,7 +21,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           localStorage.removeItem('token');
         }
-      } catch (e) {
+      } catch {
         localStorage.removeItem('token');
       }
     }
@@ -60,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const claims = jwtDecode<JwtPayload>(newToken);
       setIsAdmin(claims?.role === 'admin');
-    } catch (e) {
+    } catch {
       setIsAdmin(false);
     }
   };
@@ -72,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAdmin(false);
   };
 
-  const value = {
+  const value: AuthContextType = {
     token,
     isLoggedIn,
     loading,
@@ -83,5 +59,3 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
-export default AuthContext; 
