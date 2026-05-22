@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 
 	"mqtt-streaming-server/domain"
 	"mqtt-streaming-server/repository"
@@ -20,7 +20,7 @@ type UserController struct {
 	UserRepository domain.UserRepository
 }
 
-func InitUserRoutes(db *mongo.Database, mux *http.ServeMux) {
+func InitUserRoutes(db *gorm.DB, mux *http.ServeMux) {
 	userController := &UserController{
 		UserRepository: repository.NewUserRepository(db),
 	}
@@ -44,7 +44,7 @@ func (ctlr UserController) Register(w http.ResponseWriter, r *http.Request) {
 
 	// look for existing user
 	existingUser, err := ctlr.UserRepository.FindByEmail(r.Context(), req.Email)
-	if err != nil && err != mongo.ErrNoDocuments {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		http.Error(w, "Failed to check existing user", http.StatusInternalServerError)
 		return
 	}

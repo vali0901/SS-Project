@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/mongo"
+	"gorm.io/gorm"
 
 	"mqtt-streaming-server/domain"
 	"mqtt-streaming-server/repository"
@@ -21,7 +21,7 @@ type PhotoController struct {
 	PhotoRepository domain.PhotoRepository
 }
 
-func InitPhotoRoutes(db *mongo.Database, mux *http.ServeMux) {
+func InitPhotoRoutes(db *gorm.DB, mux *http.ServeMux) {
 	photoController := &PhotoController{
 		PhotoRepository: repository.NewPhotoRepository(db),
 	}
@@ -55,38 +55,24 @@ func (ctlr PhotoController) GetPhotos(w http.ResponseWriter, r *http.Request) {
 	text := r.URL.Query().Get("text")
 	deviceID := r.URL.Query().Get("device_id")
 
-	if start == "" {
-		start = strconv.FormatInt(time.Now().Add(-24*time.Hour).UTC().Unix(), 10)
+	filters := make(map[string]any)
+
+	if start != "" {
+		startInt, err := strconv.ParseInt(start, 10, 64)
+		if err == nil {
+			filters["start_date"] = time.Unix(startInt, 0)
+		}
 	}
 
-	if end == "" {
-		end = strconv.FormatInt(time.Now().UTC().Unix(), 10)
-	}
-
-	startInt, err := strconv.ParseInt(start, 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid start timestamp "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	endInt, err := strconv.ParseInt(end, 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid end timestamp "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	filters := map[string]any{
-		"timestamp": map[string]any{
-			"$gte": time.Unix(startInt, 0),
-			"$lte": time.Unix(endInt, 0),
-		},
+	if end != "" {
+		endInt, err := strconv.ParseInt(end, 10, 64)
+		if err == nil {
+			filters["end_date"] = time.Unix(endInt, 0)
+		}
 	}
 
 	if text != "" {
-		filters["text"] = map[string]any{
-			"$regex":   text,
-			"$options": "i",
-		}
+		filters["text"] = text
 	}
 
 	if deviceID != "" {
@@ -96,7 +82,7 @@ func (ctlr PhotoController) GetPhotos(w http.ResponseWriter, r *http.Request) {
 	photos, err := ctlr.PhotoRepository.GetPhotos(ctx, filters)
 	if err != nil {
 		fmt.Println("Error fetching photos:", err)
-		http.Error(w, "Failed to fetch photos: ", http.StatusInternalServerError)
+		http.Error(w, "Failed to fetch photos", http.StatusInternalServerError)
 		return
 	}
 
@@ -118,18 +104,22 @@ func (ctlr PhotoController) UpdatePhoto(w http.ResponseWriter, r *http.Request) 
 	}
 	photoID := path
 
-	var update map[string]any
-	if err := json.NewDecoder(r.Body).Decode(&update); err != nil {
+	// We decode into domain.Photo to leverage json:",inline" and embedded MedicalData
+	var updatedPhoto domain.Photo
+	if err := json.NewDecoder(r.Body).Decode(&updatedPhoto); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// Remove fields that should not be updated manually to prevent data corruption
-	// especially timestamp which must remain a native BSON Date
-	delete(update, "id")
-	delete(update, "timestamp")
-	delete(update, "presigned_url")
-	delete(update, "device_id")
+	// Prepare update map for GORM
+	update := map[string]any{
+		"medical_data": updatedPhoto.MedicalData,
+	}
+	
+	// If text was provided, update it too
+	if updatedPhoto.Text != "" {
+		update["text"] = updatedPhoto.Text
+	}
 
 	err := ctlr.PhotoRepository.Update(ctx, photoID, update)
 	if err != nil {

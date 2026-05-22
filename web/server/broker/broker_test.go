@@ -5,7 +5,7 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/otiai10/gosseract/v2"
-	"go.mongodb.org/mongo-driver/mongo"
+	"gorm.io/gorm"
 
 	"mqtt-streaming-server/broker"
 )
@@ -14,7 +14,7 @@ func TestBrokerHandler_RegisterDevice(t *testing.T) {
 	tests := []struct {
 		name string // description of this test case
 		// Named input parameters for receiver constructor.
-		db        *mongo.Database
+		db        *gorm.DB
 		ocrClient *gosseract.Client
 		// Named input parameters for target function.
 		msg mqtt.Message

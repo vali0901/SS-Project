@@ -2,62 +2,45 @@ package repository
 
 import (
 	"context"
-
-	"go.mongodb.org/mongo-driver/mongo"
-
 	"mqtt-streaming-server/domain"
+
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type deviceRepository struct {
-	db *mongo.Database
+	db *gorm.DB
 }
 
-func NewDeviceRepository(db *mongo.Database) *deviceRepository {
+func NewDeviceRepository(db *gorm.DB) *deviceRepository {
 	return &deviceRepository{db: db}
 }
 
-func (repo *deviceRepository) GetAllDevices(ctx context.Context) ([]*domain.Device, error) {
-	collection := repo.db.Collection("devices")
-	devices := make([]*domain.Device, 0)
-	cursor, err := collection.Find(ctx, map[string]any{})
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
-
-	for cursor.Next(ctx) {
-		var device domain.Device
-		if err := cursor.Decode(&device); err != nil {
-			return nil, err
-		}
-		devices = append(devices, &device)
-	}
-
-	if err := cursor.Err(); err != nil {
-		return nil, err
-	}
-
-	return devices, nil
+func (r *deviceRepository) GetAllDevices(ctx context.Context) ([]*domain.Device, error) {
+	var devices []*domain.Device
+	err := r.db.WithContext(ctx).Find(&devices).Error
+	return devices, err
 }
 
-func (repo *deviceRepository) Save(ctx context.Context, device *domain.Device) error {
-	collection := repo.db.Collection("devices")
-	_, err := collection.InsertOne(ctx, device)
-	return err
-}
-
-func (repo *deviceRepository) Update(ctx context.Context, deviceID string, device *domain.Device) error {
-	collection := repo.db.Collection("devices")
-	_, err := collection.UpdateOne(ctx, map[string]string{"device_id": deviceID}, map[string]any{"$set": device})
-	return err
-}
-
-func (repo *deviceRepository) GetByID(ctx context.Context, deviceID string) (*domain.Device, error) {
-	collection := repo.db.Collection("devices")
-	var device *domain.Device
-	err := collection.FindOne(ctx, map[string]string{"device_id": deviceID}).Decode(&device)
-	if err != nil {
-		return nil, err
+func (r *deviceRepository) GetByID(ctx context.Context, id string) (*domain.Device, error) {
+	var device domain.Device
+	result := r.db.WithContext(ctx).Where("id = ?", id).Limit(1).Find(&device)
+	if result.Error != nil {
+		return nil, result.Error
 	}
-	return device, nil
+	if result.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+	return &device, nil
+}
+
+func (r *deviceRepository) Update(ctx context.Context, id string, device *domain.Device) error {
+	return r.db.WithContext(ctx).Model(&domain.Device{}).Where("id = ?", id).Updates(device).Error
+}
+
+func (r *deviceRepository) Save(ctx context.Context, device *domain.Device) error {
+	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "id"}},
+		UpdateAll: true,
+	}).Create(device).Error
 }

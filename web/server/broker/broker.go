@@ -11,8 +11,9 @@ import (
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/google/uuid"
 	"github.com/otiai10/gosseract/v2"
-	"go.mongodb.org/mongo-driver/mongo"
+	"gorm.io/gorm"
 
 	"mqtt-streaming-server/domain"
 	"mqtt-streaming-server/repository"
@@ -25,7 +26,7 @@ type BrokerHandler struct {
 	ocrClient        *gosseract.Client
 }
 
-func NewBrokerHandler(db *mongo.Database, ocrClient *gosseract.Client) BrokerHandler {
+func NewBrokerHandler(db *gorm.DB, ocrClient *gosseract.Client) BrokerHandler {
 	return BrokerHandler{
 		photoRepository:  repository.NewPhotoRepository(db),
 		deviceRepository: repository.NewDeviceRepository(db),
@@ -51,13 +52,15 @@ func (b BrokerHandler) HandlePhoto(_ mqtt.Client, msg mqtt.Message) {
 	// get registered device
 	device, err := b.deviceRepository.GetByID(ctx, deviceID)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if err == gorm.ErrRecordNotFound {
 			fmt.Printf("Device ID not found: %s. Auto-registering...\n", deviceID)
 			// Auto-register the device
 			newDevice := &domain.Device{
+				ID:           deviceID,
 				DeviceID:     deviceID,
 				DeviceName:   "Unknown Device (" + deviceID + ")",
 				DeviceStatus: "active",
+				LastSeen:     time.Now().UTC(),
 			}
 			if err := b.deviceRepository.Save(ctx, newDevice); err != nil {
 				fmt.Printf("Failed to auto-register device: %v\n", err)
@@ -99,6 +102,7 @@ func (b BrokerHandler) HandlePhoto(_ mqtt.Client, msg mqtt.Message) {
 	
 	// Create photo with embedded medical data
 	photo := &domain.Photo{
+		ID:        uuid.New().String(),
 		ImageType: imageType,
 		Timestamp: timestamp,
 		DeviceID:  deviceID,
@@ -112,7 +116,7 @@ func (b BrokerHandler) HandlePhoto(_ mqtt.Client, msg mqtt.Message) {
 	
 	err = b.photoRepository.Save(ctx, photo)
 	if err != nil {
-		fmt.Printf("Failed to insert photo into MongoDB: %v\n", err)
+		fmt.Printf("Failed to insert photo into PostgreSQL: %v\n", err)
 		return
 	}
 	// Save photo locally
@@ -150,13 +154,14 @@ func (b BrokerHandler) RegisterDevice(_ mqtt.Client, msg mqtt.Message) {
 
 	// Check if device ID already exists
 	_, err := b.deviceRepository.GetByID(ctx, deviceID)
-	if err != nil && err != mongo.ErrNoDocuments {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		fmt.Printf("Failed to check device ID: %v\n", err)
 		return
 	}
-	if err == mongo.ErrNoDocuments {
+	if err == gorm.ErrRecordNotFound {
 		// Device ID does not exist, insert it
 		err = b.deviceRepository.Save(ctx, &domain.Device{
+			ID:           deviceID,
 			DeviceID:     deviceID,
 			DeviceName:   deviceName,
 			DeviceStatus: "active",
@@ -173,7 +178,6 @@ func (b BrokerHandler) RegisterDevice(_ mqtt.Client, msg mqtt.Message) {
 	}
 	// Device ID already exists, update it
 	err = b.deviceRepository.Update(ctx, deviceID, &domain.Device{
-		DeviceID:     deviceID,
 		DeviceName:   deviceName,
 		DeviceStatus: "active",
 		IPAddress:    ipAddress,
@@ -216,10 +220,11 @@ func (b BrokerHandler) DisconnectDevice(_ mqtt.Client, msg mqtt.Message) {
 		return
 	}
 	err = b.deviceRepository.Update(ctx, deviceID, &domain.Device{
-		DeviceID:     deviceID,
 		DeviceStatus: "inactive",
-		DeviceName:   device.DeviceName,
 	})
+	if err != nil {
+		fmt.Printf("Failed to mark device as inactive: %v\n", err)
+	}
 }
 
 func (b BrokerHandler) extractTextFromImage(imageData []byte) (string, error) {

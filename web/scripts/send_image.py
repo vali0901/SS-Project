@@ -113,12 +113,15 @@ def on_publish(client, userdata, mid):
         print(f"\n✅ Device '{DEVICE_ID}' registered and photo sent!")
         print(f"   Topic: {PHOTO_TOPIC}")
         client.disconnect()
-        sys.exit(0)
+
+def on_disconnect(client, userdata, rc):
+    print("Disconnected from MQTT Broker")
 
 # Create MQTT client
 client = mqtt.Client(client_id=DEVICE_ID)
 client.on_connect = on_connect
 client.on_publish = on_publish
+client.on_disconnect = on_disconnect
 
 client.tls_set(ca_certs=CA_CRT, certfile=CLIENT_CRT, keyfile=CLIENT_KEY, tls_version=ssl.PROTOCOL_TLSv1_2)
 
@@ -126,7 +129,9 @@ print(f"Device ID: {DEVICE_ID}")
 print(f"Connecting to {BROKER}:{PORT}...")
 try:
     client.connect(BROKER, PORT, 60)
+    # Use loop_forever which will block until client.disconnect() is called
     client.loop_forever()
+    print("Clean exit.")
 except Exception as e:
     print(f"Connection failed: {e}")
     sys.exit(1)

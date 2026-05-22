@@ -2,97 +2,73 @@ package repository
 
 import (
 	"context"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-
 	"mqtt-streaming-server/domain"
+	"time"
+
+	"gorm.io/gorm"
 )
 
 type photoRepository struct {
-	db *mongo.Database
+	db *gorm.DB
 }
 
-func NewPhotoRepository(db *mongo.Database) *photoRepository {
+func NewPhotoRepository(db *gorm.DB) *photoRepository {
 	return &photoRepository{db: db}
 }
 
-func (repo *photoRepository) GetPhotos(ctx context.Context, filters map[string]any) ([]*domain.Photo, error) {
-	collection := repo.db.Collection("photos")
-	photos := make([]*domain.Photo, 0)
-	cursor, err := collection.Find(ctx, filters, &options.FindOptions{
-		Sort: map[string]int{"timestamp": -1}, // Sort by timestamp in descending order
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(ctx)
+func (r *photoRepository) GetPhotos(ctx context.Context, filters map[string]any) ([]*domain.Photo, error) {
+	query := r.db.WithContext(ctx).Model(&domain.Photo{})
 
-	for cursor.Next(ctx) {
-		var photo domain.Photo
-		if err := cursor.Decode(&photo); err != nil {
-			return nil, err
-		}
-		photos = append(photos, &photo)
+	if deviceID, ok := filters["device_id"].(string); ok && deviceID != "" {
+		query = query.Where("device_id = ?", deviceID)
 	}
 
-	if err := cursor.Err(); err != nil {
-		return nil, err
+	if startDate, ok := filters["start_date"].(time.Time); ok && !startDate.IsZero() {
+		query = query.Where("timestamp >= ?", startDate)
 	}
 
-	return photos, nil
+	if endDate, ok := filters["end_date"].(time.Time); ok && !endDate.IsZero() {
+		query = query.Where("timestamp <= ?", endDate)
+	}
+
+	if searchText, ok := filters["text"].(string); ok && searchText != "" {
+		// PostgreSQL full-text search or simple LIKE for simplicity here
+		query = query.Where("text ILIKE ?", "%"+searchText+"%")
+	}
+
+	var photos []*domain.Photo
+	err := query.Order("timestamp DESC").Find(&photos).Error
+	return photos, err
 }
 
-func (repo *photoRepository) Save(ctx context.Context, photo *domain.Photo) error {
-	collection := repo.db.Collection("photos")
-	_, err := collection.InsertOne(ctx, photo)
-	return err
-}
-
-func (repo *photoRepository) Update(ctx context.Context, id string, update any) error {
-	collection := repo.db.Collection("photos")
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-
-	// If update is a map, we use it directly with $set
-	// If it's a struct, we should be careful about zero values
-	// The controller will now pass a map for partial updates
-	_, err = collection.UpdateOne(ctx, map[string]any{"_id": objID}, map[string]any{"$set": update})
-	return err
-}
-
-func (repo *photoRepository) GetByID(ctx context.Context, id string) (*domain.Photo, error) {
-	collection := repo.db.Collection("photos")
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
+func (r *photoRepository) GetByID(ctx context.Context, id string) (*domain.Photo, error) {
 	var photo domain.Photo
-	err = collection.FindOne(ctx, map[string]any{"_id": objID}).Decode(&photo)
-	if err != nil {
-		return nil, err
+	result := r.db.WithContext(ctx).Where("id = ?", id).Limit(1).Find(&photo)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
 	}
 	return &photo, nil
 }
 
-func (repo *photoRepository) Delete(ctx context.Context, id string) error {
-	collection := repo.db.Collection("photos")
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-	_, err = collection.DeleteOne(ctx, map[string]any{"_id": objID})
-	return err
+func (r *photoRepository) Save(ctx context.Context, photo *domain.Photo) error {
+	return r.db.WithContext(ctx).Create(photo).Error
 }
 
-func (repo *photoRepository) DeleteAll(ctx context.Context) (int64, error) {
-	collection := repo.db.Collection("photos")
-	result, err := collection.DeleteMany(ctx, map[string]any{})
-	if err != nil {
-		return 0, err
-	}
-	return result.DeletedCount, nil
+func (r *photoRepository) Update(ctx context.Context, id string, update any) error {
+	// If the update is a map, we need to handle medical_data specially if it's not present
+	// or if we want to merge it. For now, we expect the handler to provide the full
+	// updated object or a map that GORM can handle.
+	return r.db.WithContext(ctx).Model(&domain.Photo{}).Where("id = ?", id).Updates(update).Error
+}
+
+func (r *photoRepository) Delete(ctx context.Context, id string) error {
+	return r.db.WithContext(ctx).Delete(&domain.Photo{}, "id = ?", id).Error
+}
+
+func (r *photoRepository) DeleteAll(ctx context.Context) (int64, error) {
+	result := r.db.WithContext(ctx).Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&domain.Photo{})
+	return result.RowsAffected, result.Error
 }

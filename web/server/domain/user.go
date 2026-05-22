@@ -3,9 +3,9 @@ package domain
 import "context"
 
 type User struct {
-	Email    string `json:"email" bson:"email"`
-	Password string `json:"password,omitempty" bson:"password"`
-	Role     string `json:"role,omitempty" bson:"role"`
+	Email    string `json:"email" gorm:"primaryKey;type:varchar(255)"`
+	Password string `json:"password,omitempty" gorm:"type:varchar(255);not null"`
+	Role     string `json:"role,omitempty" gorm:"type:varchar(50);default:'user'"`
 }
 
 type UserRepository interface {

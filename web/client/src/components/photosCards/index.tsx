@@ -6,6 +6,7 @@ import type { Photo, MedicalData, ExtractedField } from '../../types/photo';
 interface PhotoCardProps {
   photoId: string;
   imageUrl: string;
+  timestamp: string;
   altText?: string;
   extractedText?: string;
   onDelete?: (photoId: string) => void;
@@ -16,6 +17,7 @@ interface PhotoCardProps {
 const PhotoCard: React.FC<PhotoCardProps> = ({
   photoId,
   imageUrl,
+  timestamp,
   altText = 'Photo',
   extractedText = '',
   onDelete,
@@ -89,7 +91,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
     if (onUpdate && editData) {
       setIsSaving(true);
       try {
-        await onUpdate(photoId, editData as Partial<Photo>);
+        await onUpdate(photoId, { medical_data: editData } as any);
         setEditingField(null);
         setEditData(null);
       } catch (error) {
@@ -112,7 +114,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
           (field as ExtractedField<unknown>).is_validated = true;
         }
       });
-      await onUpdate(photoId, validatedData as Partial<Photo>);
+      await onUpdate(photoId, { medical_data: validatedData } as any);
     } catch (error) {
       console.error('Failed to validate data:', error);
     } finally {
@@ -130,7 +132,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
       if (field) {
         (field as ExtractedField<unknown>).is_validated = true;
       }
-      await onUpdate(photoId, validatedData as Partial<Photo>);
+      await onUpdate(photoId, { medical_data: validatedData } as any);
     } catch (error) {
       console.error('Failed to validate field:', error);
     } finally {
@@ -252,7 +254,6 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
     return false;
   }) : false;
 
-  const timestamp = medicalData && 'timestamp' in medicalData ? (medicalData as Photo).timestamp : 0;
 
   return (
     <>

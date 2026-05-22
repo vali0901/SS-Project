@@ -454,11 +454,12 @@ const PhotosPage: React.FC = () => {
                     key={photo.id}
                     photoId={photo.id}
                     imageUrl={photo.presigned_url}
+                    timestamp={photo.timestamp}
                     extractedText={photo.text}
                     altText={`Photo from ${new Date(photo.timestamp).toLocaleDateString()}`}
                     onDelete={handleDeletePhoto}
                     onUpdate={handleUpdatePhoto}
-                    medicalData={photo}
+                    medicalData={photo.medical_data}
                   />
                 ))}
               </div>

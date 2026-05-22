@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -13,10 +12,11 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/otiai10/gosseract/v2"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
 	"mqtt-streaming-server/broker"
+	"mqtt-streaming-server/domain"
 	"mqtt-streaming-server/routes"
 )
 
@@ -44,27 +44,40 @@ func NewTLSConfig() *tls.Config {
 }
 
 func main() {
-	// Connect to MongoDB
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	// Connect to PostgreSQL using GORM
+	dsn := fmt.Sprintf("host=postgres-db user=%s password=%s dbname=%s port=5432 sslmode=disable",
+		os.Getenv("POSTGRES_USER"),
+		os.Getenv("POSTGRES_PASSWORD"),
+		os.Getenv("POSTGRES_DB"),
+	)
+	
+	var db *gorm.DB
+	var err error
+	maxRetries := 10
+	for i := 0; i < maxRetries; i++ {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err == nil {
+			break
+		}
+		fmt.Printf("Failed to connect to PostgreSQL (attempt %d/%d): %v\n", i+1, maxRetries, err)
+		time.Sleep(3 * time.Second)
+	}
 
-	uri := fmt.Sprintf("mongodb://%s:%s@mongo-db:27017/?authSource=admin", os.Getenv("MONGO_INITDB_ROOT_USERNAME"), os.Getenv("MONGO_INITDB_ROOT_PASSWORD"))
-	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
-		fmt.Println("Failed to connect to MongoDB:", err)
+		fmt.Println("Failed to connect to PostgreSQL after multiple attempts:", err)
 		panic(err)
 	}
-	defer func() {
-		if err := mongoClient.Disconnect(ctx); err != nil {
-			panic(err)
-		}
-	}()
-	db := mongoClient.Database("mqtt-streaming-server")
 
-	fmt.Println("Connected to MongoDB!")
+	// Auto Migration
+	err = db.AutoMigrate(&domain.User{}, &domain.Device{}, &domain.Photo{})
+	if err != nil {
+		fmt.Println("Failed to run auto-migration:", err)
+		panic(err)
+	}
+
+	fmt.Println("Connected to PostgreSQL and ran auto-migrations!")
 
 	c := make(chan os.Signal, 1)
-
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	ocrClient := gosseract.NewClient()
@@ -84,7 +97,7 @@ func main() {
 		panic(token.Error())
 	}
 
-	// Subscribe to images topic
+	// Subscribe to topics
 	if token := client.Subscribe("ssproject/images/#", 0, brokerHandler.HandlePhoto); token.Wait() && token.Error() != nil {
 		fmt.Println(token.Error())
 		os.Exit(1)
@@ -100,7 +113,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize user routes
+	// Initialize routes
 	handler := routes.InitRoutes(db, client)
 
 	go func() {

@@ -36,11 +36,12 @@ export interface MedicalData {
 }
 
 // Interface for photo data
-export interface Photo extends MedicalData {
+export interface Photo {
   id: string;
   timestamp: string;
   image_type: string;
   presigned_url: string;
   device_id: string;
   text: string;
+  medical_data: MedicalData;
 }

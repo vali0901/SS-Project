@@ -10,10 +10,10 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/golang-jwt/jwt/v4"
-	"go.mongodb.org/mongo-driver/mongo"
+	"gorm.io/gorm"
 )
 
-func InitRoutes(db *mongo.Database, mqttClient mqtt.Client) http.Handler {
+func InitRoutes(db *gorm.DB, mqttClient mqtt.Client) http.Handler {
 	mux := http.NewServeMux()
 	InitUserRoutes(db, mux)
 	InitPhotoRoutes(db, mux)

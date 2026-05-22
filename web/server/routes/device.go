@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"go.mongodb.org/mongo-driver/mongo"
+	"gorm.io/gorm"
 
 	"mqtt-streaming-server/domain"
 	"mqtt-streaming-server/repository"
@@ -17,7 +17,7 @@ type DeviceController struct {
 	mqttClient       mqtt.Client
 }
 
-func InitDeviceRoutes(db *mongo.Database, mqttClient mqtt.Client, mux *http.ServeMux) {
+func InitDeviceRoutes(db *gorm.DB, mqttClient mqtt.Client, mux *http.ServeMux) {
 	deviceController := &DeviceController{
 		DeviceRepository: repository.NewDeviceRepository(db),
 		mqttClient:       mqttClient,
@@ -34,10 +34,6 @@ func (ctlr DeviceController) SwitchDeviceMode(w http.ResponseWriter, r *http.Req
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
-
-
-
 
 	var device struct {
 		ID   string `json:"id"`
@@ -65,8 +61,6 @@ func (ctlr DeviceController) GetDevices(w http.ResponseWriter, r *http.Request) 
 
 	ctx := r.Context()
 
-
-
 	// Fetch devices from the database
 	devices, err := ctlr.DeviceRepository.GetAllDevices(ctx)
 	if err != nil {
@@ -83,7 +77,6 @@ func (ctlr DeviceController) SendCommand(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-
 
 	var request struct {
 		DeviceID string `json:"device_id"`
