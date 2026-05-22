@@ -3,20 +3,19 @@ package domain
 import (
 	"context"
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Photo struct {
-	ID           primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Timestamp    time.Time          `json:"timestamp" bson:"timestamp"`
-	ImageType    string             `json:"image_type" bson:"image_type"`
-	PresignedURL string             `json:"presigned_url" bson:",omitempty"`
-	DeviceID     string             `json:"device_id" bson:"device_id"`
-	Text         string             `json:"text" bson:"text"`
+	ID           string    `json:"id" gorm:"primaryKey;type:varchar(100)"`
+	Timestamp    time.Time `json:"timestamp" gorm:"index"`
+	ImageType    string    `json:"image_type" gorm:"type:varchar(50)"`
+	PresignedURL string    `json:"presigned_url" gorm:"-"` // Not stored in DB, generated on the fly
+	DeviceID     string    `json:"device_id" gorm:"type:varchar(100);index"`
+	UserEmail    string    `json:"user_email" gorm:"type:varchar(255);index"`
+	Text         string    `json:"text" gorm:"type:text"`
 
-	// Medical Data Fields
-	MedicalData `bson:",inline"`
+	// Medical Data Fields - Stored as a single JSONB column
+	MedicalData MedicalData `json:"medical_data" gorm:"column:medical_data;type:jsonb;serializer:json"`
 }
 
 type PhotoRepository interface {

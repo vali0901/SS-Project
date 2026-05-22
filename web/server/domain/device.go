@@ -6,13 +6,14 @@ import (
 )
 
 type Device struct {
-	ID           string    `json:"id" bson:"_id,omitempty"`
-	DeviceID     string    `json:"device_id" bson:"device_id"`
-	DeviceName   string    `json:"device_name" bson:"device_name"`
-	DeviceStatus string    `json:"device_status" bson:"device_status"`
-	IPAddress    string    `json:"ip_address" bson:"ip_address"`
-	Port         string    `json:"port" bson:"port"`
-	LastSeen     time.Time `json:"last_seen" bson:"last_seen"`
+	ID           string    `json:"id" gorm:"primaryKey;type:varchar(100)"`
+	DeviceID     string    `json:"device_id" gorm:"type:varchar(100);uniqueIndex;not null"`
+	DeviceName   string    `json:"device_name" gorm:"type:varchar(255)"`
+	DeviceStatus string    `json:"device_status" gorm:"type:varchar(50)"`
+	IPAddress    string    `json:"ip_address" gorm:"type:varchar(50)"`
+	Port         string    `json:"port" gorm:"type:varchar(10)"`
+	UserEmail    string    `json:"user_email" gorm:"type:varchar(255);index"`
+	LastSeen     time.Time `json:"last_seen"`
 }
 
 type DeviceRepository interface {

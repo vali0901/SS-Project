@@ -77,12 +77,12 @@ const StatisticsPage: React.FC = () => {
         };
 
         photos.forEach(photo => {
-            if (photo.control_angajare?.value) stats['Angajare']++;
-            if (photo.control_periodic?.value) stats['Periodic']++;
-            if (photo.control_adaptare?.value) stats['Adaptare']++;
-            if (photo.control_reluare?.value) stats['Reluare']++;
-            if (photo.control_supraveghere?.value) stats['Supraveghere']++;
-            if (photo.control_alte?.value) stats['Alte']++;
+            if (photo.medical_data?.control_angajare?.value) stats['Angajare']++;
+            if (photo.medical_data?.control_periodic?.value) stats['Periodic']++;
+            if (photo.medical_data?.control_adaptare?.value) stats['Adaptare']++;
+            if (photo.medical_data?.control_reluare?.value) stats['Reluare']++;
+            if (photo.medical_data?.control_supraveghere?.value) stats['Supraveghere']++;
+            if (photo.medical_data?.control_alte?.value) stats['Alte']++;
         });
 
         return Object.entries(stats).map(([name, value]) => ({ name, value }));
@@ -97,10 +97,10 @@ const StatisticsPage: React.FC = () => {
         };
 
         photos.forEach(photo => {
-            if (photo.aviz_apt?.value) stats['APT']++;
-            if (photo.aviz_apt_conditionat?.value) stats['APT Conditionat']++;
-            if (photo.aviz_inapt_temporar?.value) stats['Inapt Temporar']++;
-            if (photo.aviz_inapt?.value) stats['Inapt']++;
+            if (photo.medical_data?.aviz_apt?.value) stats['APT']++;
+            if (photo.medical_data?.aviz_apt_conditionat?.value) stats['APT Conditionat']++;
+            if (photo.medical_data?.aviz_inapt_temporar?.value) stats['Inapt Temporar']++;
+            if (photo.medical_data?.aviz_inapt?.value) stats['Inapt']++;
         });
 
         return Object.entries(stats).map(([name, value]) => ({ name, value }));

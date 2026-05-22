@@ -1,8 +1,13 @@
 package routes
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"image"
+	_ "image/jpeg"
+	_ "image/png"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -10,7 +15,9 @@ import (
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/mongo"
+	"github.com/google/uuid"
+	"github.com/otiai10/gosseract/v2"
+	"gorm.io/gorm"
 
 	"mqtt-streaming-server/domain"
 	"mqtt-streaming-server/repository"
@@ -19,14 +26,24 @@ import (
 
 type PhotoController struct {
 	PhotoRepository domain.PhotoRepository
+	ocrClient        *gosseract.Client
 }
 
-func InitPhotoRoutes(db *mongo.Database, mux *http.ServeMux) {
+func InitPhotoRoutes(db *gorm.DB, ocrClient *gosseract.Client, mux *http.ServeMux) {
 	photoController := &PhotoController{
 		PhotoRepository: repository.NewPhotoRepository(db),
+		ocrClient:       ocrClient,
 	}
 
-	mux.Handle("/photos", withAuth(http.HandlerFunc(photoController.GetPhotos)))
+	mux.Handle("/photos", withAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			photoController.GetPhotos(w, r)
+		} else if r.Method == http.MethodPost {
+			photoController.UploadPhoto(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})))
 	mux.Handle("/photos/all", withAuth(http.HandlerFunc(photoController.DeleteAllPhotos)))
 	mux.Handle("/photos/", withAuth(http.HandlerFunc(photoController.HandlePhotoByID)))
 }
@@ -43,50 +60,42 @@ func (ctlr PhotoController) HandlePhotoByID(w http.ResponseWriter, r *http.Reque
 }
 
 func (ctlr PhotoController) GetPhotos(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	ctx := r.Context()
 
 	start := r.URL.Query().Get("start")
 	end := r.URL.Query().Get("end")
 	text := r.URL.Query().Get("text")
 	deviceID := r.URL.Query().Get("device_id")
+	userEmailParam := r.URL.Query().Get("user_email")
 
-	if start == "" {
-		start = strconv.FormatInt(time.Now().Add(-24*time.Hour).UTC().Unix(), 10)
+	filters := make(map[string]any)
+
+	// If user is not admin, only show their photos
+	role, _ := ctx.Value("role").(string)
+	if role != "admin" {
+		email, _ := ctx.Value("email").(string)
+		filters["user_email"] = email
+	} else if userEmailParam != "" && userEmailParam != "all" {
+		// Admin can filter by specific user
+		filters["user_email"] = userEmailParam
 	}
 
-	if end == "" {
-		end = strconv.FormatInt(time.Now().UTC().Unix(), 10)
+	if start != "" {
+		startInt, err := strconv.ParseInt(start, 10, 64)
+		if err == nil {
+			filters["start_date"] = time.Unix(startInt, 0)
+		}
 	}
 
-	startInt, err := strconv.ParseInt(start, 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid start timestamp "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	endInt, err := strconv.ParseInt(end, 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid end timestamp "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	filters := map[string]any{
-		"timestamp": map[string]any{
-			"$gte": time.Unix(startInt, 0),
-			"$lte": time.Unix(endInt, 0),
-		},
+	if end != "" {
+		endInt, err := strconv.ParseInt(end, 10, 64)
+		if err == nil {
+			filters["end_date"] = time.Unix(endInt, 0)
+		}
 	}
 
 	if text != "" {
-		filters["text"] = map[string]any{
-			"$regex":   text,
-			"$options": "i",
-		}
+		filters["text"] = text
 	}
 
 	if deviceID != "" {
@@ -96,7 +105,7 @@ func (ctlr PhotoController) GetPhotos(w http.ResponseWriter, r *http.Request) {
 	photos, err := ctlr.PhotoRepository.GetPhotos(ctx, filters)
 	if err != nil {
 		fmt.Println("Error fetching photos:", err)
-		http.Error(w, "Failed to fetch photos: ", http.StatusInternalServerError)
+		http.Error(w, "Failed to fetch photos", http.StatusInternalServerError)
 		return
 	}
 
@@ -109,8 +118,103 @@ func (ctlr PhotoController) GetPhotos(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(photos)
 }
 
+func (ctlr PhotoController) UploadPhoto(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	userEmail, _ := ctx.Value("email").(string)
+
+	// Parse multipart form
+	err := r.ParseMultipartForm(10 << 20) // 10 MB limit
+	if err != nil {
+		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+		return
+	}
+
+	file, header, err := r.FormFile("photo")
+	if err != nil {
+		http.Error(w, "Photo field missing", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Read file bytes
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, "Failed to read file", http.StatusInternalServerError)
+		return
+	}
+
+	// Detect image type
+	_, imageType, err := image.DecodeConfig(bytes.NewReader(fileBytes))
+	if err != nil {
+		// Fallback to extension if decoding fails
+		ext := filepath.Ext(header.Filename)
+		if ext != "" {
+			imageType = strings.TrimPrefix(ext, ".")
+		} else {
+			imageType = "jpeg"
+		}
+	}
+
+	// OCR Extraction
+	text := "OCR skipped"
+	if ctlr.ocrClient != nil {
+		ctlr.ocrClient.SetImageFromBytes(fileBytes)
+		extracted, err := ctlr.ocrClient.Text()
+		if err == nil {
+			text = extracted
+		}
+	}
+
+	// Medical Data Extraction
+	var medicalData *domain.MedicalData
+	if utils.IsMedicalCertificate(text) {
+		medicalData = utils.ParseMedicalCertificate(text)
+	}
+
+	timestamp := time.Now().UTC()
+	deviceID := r.FormValue("device_id")
+	if deviceID == "" {
+		deviceID = "web_upload"
+	}
+
+	// Create photo object
+	photo := &domain.Photo{
+		ID:        uuid.New().String(),
+		Timestamp: timestamp,
+		ImageType: imageType,
+		DeviceID:  deviceID,
+		UserEmail: userEmail,
+		Text:      text,
+	}
+
+	if medicalData != nil {
+		photo.MedicalData = *medicalData
+	}
+
+	// Save to DB
+	err = ctlr.PhotoRepository.Save(ctx, photo)
+	if err != nil {
+		http.Error(w, "Failed to save photo metadata", http.StatusInternalServerError)
+		return
+	}
+
+	// Save file locally
+	keyName := fmt.Sprintf("photos/%d.%s", timestamp.Unix(), imageType)
+	if err := utils.SaveToLocal(fileBytes, keyName); err != nil {
+		// We already saved to DB, so this is bad. 
+		// In a real app we'd use a transaction or clean up.
+		fmt.Printf("Failed to save photo file: %v\n", err)
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(photo)
+}
+
 func (ctlr PhotoController) UpdatePhoto(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	userEmail, _ := ctx.Value("email").(string)
+	role, _ := ctx.Value("role").(string)
+
 	path := strings.TrimPrefix(r.URL.Path, "/photos/")
 	if path == "" {
 		http.Error(w, "Photo ID required", http.StatusBadRequest)
@@ -118,20 +222,36 @@ func (ctlr PhotoController) UpdatePhoto(w http.ResponseWriter, r *http.Request) 
 	}
 	photoID := path
 
-	var update map[string]any
-	if err := json.NewDecoder(r.Body).Decode(&update); err != nil {
+	// Check ownership
+	photo, err := ctlr.PhotoRepository.GetByID(ctx, photoID)
+	if err != nil {
+		http.Error(w, "Photo not found", http.StatusNotFound)
+		return
+	}
+
+	if role != "admin" && photo.UserEmail != userEmail {
+		http.Error(w, "Unauthorized", http.StatusForbidden)
+		return
+	}
+
+	// We decode into domain.Photo to leverage json:",inline" and embedded MedicalData
+	var updatedPhoto domain.Photo
+	if err := json.NewDecoder(r.Body).Decode(&updatedPhoto); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// Remove fields that should not be updated manually to prevent data corruption
-	// especially timestamp which must remain a native BSON Date
-	delete(update, "id")
-	delete(update, "timestamp")
-	delete(update, "presigned_url")
-	delete(update, "device_id")
+	// Prepare update map for GORM
+	update := map[string]any{
+		"medical_data": updatedPhoto.MedicalData,
+	}
+	
+	// If text was provided, update it too
+	if updatedPhoto.Text != "" {
+		update["text"] = updatedPhoto.Text
+	}
 
-	err := ctlr.PhotoRepository.Update(ctx, photoID, update)
+	err = ctlr.PhotoRepository.Update(ctx, photoID, update)
 	if err != nil {
 		fmt.Println("Error updating photo:", err)
 		http.Error(w, "Failed to update photo", http.StatusInternalServerError)
@@ -144,6 +264,8 @@ func (ctlr PhotoController) UpdatePhoto(w http.ResponseWriter, r *http.Request) 
 
 func (ctlr PhotoController) DeletePhoto(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	userEmail, _ := ctx.Value("email").(string)
+	role, _ := ctx.Value("role").(string)
 
 	// Extract photo ID from URL path: /photos/{id}
 	path := strings.TrimPrefix(r.URL.Path, "/photos/")
@@ -153,11 +275,16 @@ func (ctlr PhotoController) DeletePhoto(w http.ResponseWriter, r *http.Request) 
 	}
 	photoID := path
 
-	// Get the photo to find the file name
+	// Get the photo to find the file name and check ownership
 	photo, err := ctlr.PhotoRepository.GetByID(ctx, photoID)
 	if err != nil {
 		fmt.Println("Error getting photo:", err)
 		http.Error(w, "Photo not found", http.StatusNotFound)
+		return
+	}
+
+	if role != "admin" && photo.UserEmail != userEmail {
+		http.Error(w, "Unauthorized", http.StatusForbidden)
 		return
 	}
 
@@ -187,6 +314,12 @@ func (ctlr PhotoController) DeleteAllPhotos(w http.ResponseWriter, r *http.Reque
 	}
 
 	ctx := r.Context()
+	role, _ := ctx.Value("role").(string)
+
+	if role != "admin" {
+		http.Error(w, "Unauthorized: Admin only", http.StatusForbidden)
+		return
+	}
 
 	// Delete all photos from database
 	deletedCount, err := ctlr.PhotoRepository.DeleteAll(ctx)

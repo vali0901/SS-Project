@@ -6,6 +6,8 @@ import type { Photo, MedicalData, ExtractedField } from '../../types/photo';
 interface PhotoCardProps {
   photoId: string;
   imageUrl: string;
+  timestamp: string;
+  userEmail?: string;
   altText?: string;
   extractedText?: string;
   onDelete?: (photoId: string) => void;
@@ -16,6 +18,8 @@ interface PhotoCardProps {
 const PhotoCard: React.FC<PhotoCardProps> = ({
   photoId,
   imageUrl,
+  timestamp,
+  userEmail,
   altText = 'Photo',
   extractedText = '',
   onDelete,
@@ -89,7 +93,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
     if (onUpdate && editData) {
       setIsSaving(true);
       try {
-        await onUpdate(photoId, editData as Partial<Photo>);
+        await onUpdate(photoId, { medical_data: editData } as unknown as Partial<Photo>);
         setEditingField(null);
         setEditData(null);
       } catch (error) {
@@ -112,7 +116,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
           (field as ExtractedField<unknown>).is_validated = true;
         }
       });
-      await onUpdate(photoId, validatedData as Partial<Photo>);
+      await onUpdate(photoId, { medical_data: validatedData } as unknown as Partial<Photo>);
     } catch (error) {
       console.error('Failed to validate data:', error);
     } finally {
@@ -130,7 +134,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
       if (field) {
         (field as ExtractedField<unknown>).is_validated = true;
       }
-      await onUpdate(photoId, validatedData as Partial<Photo>);
+      await onUpdate(photoId, { medical_data: validatedData } as unknown as Partial<Photo>);
     } catch (error) {
       console.error('Failed to validate field:', error);
     } finally {
@@ -252,7 +256,6 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
     return false;
   }) : false;
 
-  const timestamp = medicalData && 'timestamp' in medicalData ? (medicalData as Photo).timestamp : 0;
 
   return (
     <>
@@ -304,9 +307,16 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         </div>
 
         {/* Footer info */}
-        <div className="p-2 border-t border-gray-100 bg-white flex justify-between items-center shrink-0">
-          <span className="text-[10px] text-gray-400 font-mono tracking-tighter">{photoId.slice(-8)}</span>
-          <span className="text-[10px] text-gray-500 font-medium">{new Date(timestamp).toLocaleDateString()}</span>
+        <div className="p-2 border-t border-gray-100 bg-white flex flex-col gap-0.5 shrink-0">
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-gray-400 font-mono tracking-tighter">{photoId.slice(-8)}</span>
+            <span className="text-[10px] text-gray-500 font-medium">{new Date(timestamp).toLocaleDateString()}</span>
+          </div>
+          {userEmail && (
+            <div className="text-[9px] text-sky-600 font-bold truncate" title={`Owner: ${userEmail}`}>
+              {userEmail}
+            </div>
+          )}
         </div>
 
         {/* Delete confirmation dialog */}

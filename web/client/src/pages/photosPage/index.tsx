@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PhotoCard from '../../components/photosCards';
+import { useAuth } from '../../contexts/AuthContextState';
 import { apiFetch } from '../../utils/api';
 import type { Photo } from '../../types/photo';
 
@@ -17,6 +18,7 @@ interface SearchParams {
   startDate: string;
   endDate: string;
   selectedDevice: string;
+  selectedUser: string;
 }
 
 const STORAGE_KEY = 'photoSearchParams';
@@ -35,7 +37,8 @@ const PhotosPage: React.FC = () => {
       searchText: '',
       startDate: `${today.getFullYear()}-01-01`,
       endDate: today.toISOString().slice(0, 10),
-      selectedDevice: 'all'
+      selectedDevice: 'all',
+      selectedUser: 'all'
     };
   };
 
@@ -45,10 +48,14 @@ const PhotosPage: React.FC = () => {
   const [startDate, setStartDate] = useState(storedParams.startDate);
   const [endDate, setEndDate] = useState(storedParams.endDate);
   const [selectedDevice, setSelectedDevice] = useState(storedParams.selectedDevice);
+  const [selectedUser, setSelectedUser] = useState(storedParams.selectedUser);
 
   const [devices, setDevices] = useState<Device[]>([]);
   const [deviceError, setDeviceError] = useState<boolean>(false);
   const [deviceLoading, setDeviceLoading] = useState<boolean>(true);
+
+  const [users, setUsers] = useState<{ email: string; role: string }[]>([]);
+  const [usersLoading, setUsersLoading] = useState<boolean>(false);
 
   // States for photos
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -57,8 +64,12 @@ const PhotosPage: React.FC = () => {
   const [deleteAllConfirm, setDeleteAllConfirm] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
 
+  // Upload state
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+
   // Command state
-  const [commandLoading, setCommandLoading] = useState(false);
   const [commandMessage, setCommandMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   // Clear command message after 3 seconds
@@ -77,11 +88,36 @@ const PhotosPage: React.FC = () => {
       searchText,
       startDate,
       endDate,
-      selectedDevice
+      selectedDevice,
+      selectedUser
     };
 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(searchParams));
-  }, [searchText, startDate, endDate, selectedDevice]);
+  }, [searchText, startDate, endDate, selectedDevice, selectedUser]);
+
+  const { isAdmin } = useAuth();
+
+  // Fetch users if admin
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const fetchUsers = async () => {
+      setUsersLoading(true);
+      try {
+        const response = await apiFetch('/users');
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(data);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      } finally {
+        setUsersLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [isAdmin]);
 
   // Fetch devices from API
   useEffect(() => {
@@ -137,6 +173,11 @@ const PhotosPage: React.FC = () => {
       // Only add device_id if a specific device (not "all") is selected
       if (selectedDevice !== 'all') {
         queryParams.append('device_id', selectedDevice);
+      }
+
+      // Add user_email if admin and specific user selected
+      if (isAdmin && selectedUser !== 'all') {
+        queryParams.append('user_email', selectedUser);
       }
 
       // Make API request
@@ -196,6 +237,40 @@ const PhotosPage: React.FC = () => {
     }
   };
 
+  const handleUploadPhoto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!uploadFile) return;
+
+    setUploadLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('photo', uploadFile);
+      if (selectedDevice !== 'all') {
+        formData.append('device_id', selectedDevice);
+      }
+
+      const response = await apiFetch('/photos', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const newPhoto = await response.json();
+      setPhotos([newPhoto, ...photos]);
+      setShowUploadModal(false);
+      setUploadFile(null);
+      alert('Photo uploaded successfully');
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload photo');
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
   const handleDeleteAllPhotos = async () => {
     setDeletingAll(true);
     try {
@@ -216,36 +291,6 @@ const PhotosPage: React.FC = () => {
       alert('Failed to delete all photos');
     } finally {
       setDeletingAll(false);
-    }
-  };
-
-  const sendCommand = async (command: 'CAPTURE' | 'START-LIVE' | 'STOP-LIVE') => {
-    // Determine device ID
-    // If a specific device is selected, use it. Otherwise, default to "camera_stream" (the unknown device default)
-    const targetDeviceId = selectedDevice !== 'all' ? selectedDevice : 'camera_stream';
-
-    setCommandLoading(true);
-    setCommandMessage(null);
-
-    try {
-      const response = await apiFetch('/devices/command', {
-        method: 'POST',
-        body: JSON.stringify({
-          device_id: targetDeviceId,
-          command: command
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to send command: ${response.status} ${response.statusText}`);
-      }
-
-      setCommandMessage({ type: 'success', text: `Command ${command} sent successfully` });
-    } catch (error) {
-      console.error(`Error sending command ${command}:`, error);
-      setCommandMessage({ type: 'error', text: (error as Error).message || 'Failed to send command' });
-    } finally {
-      setCommandLoading(false);
     }
   };
 
@@ -321,6 +366,28 @@ const PhotosPage: React.FC = () => {
             </div>
           )}
 
+          {/* User dropdown - only for admins */}
+          {isAdmin && !usersLoading && (
+            <div>
+              <label htmlFor="user" className="block text-sm font-medium text-gray-700 mb-1">
+                User
+              </label>
+              <select
+                id="user"
+                value={selectedUser}
+                onChange={(e) => setSelectedUser(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+              >
+                <option value="all">All Users</option>
+                {users.map(user => (
+                  <option key={user.email} value={user.email}>
+                    {user.email} {user.role === 'admin' ? '(Admin)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Loading indicator for devices */}
           {deviceLoading && (
             <div className="flex items-end">
@@ -342,47 +409,30 @@ const PhotosPage: React.FC = () => {
             </button>
           </div>
 
+          {/* Upload button */}
+          <div>
+            <button
+              onClick={() => setShowUploadModal(true)}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-colors"
+            >
+              Upload Photo
+            </button>
+          </div>
+
           {/* Separator */}
           <div className="w-px h-10 bg-gray-300 mx-2 hidden md:block"></div>
 
-          {/* ESP Camera Controls */}
-          <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-md border border-gray-200">
-            <span className="text-sm font-medium text-gray-700 whitespace-nowrap">ESP Camera:</span>
-
-            <div className="flex gap-2">
+          {/* Delete All button - admin only */}
+          {isAdmin && (
+            <div>
               <button
-                onClick={() => sendCommand('CAPTURE')}
-                disabled={commandLoading}
-                className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
+                onClick={() => setDeleteAllConfirm(true)}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
               >
-                Capture
-              </button>
-              <button
-                onClick={() => sendCommand('START-LIVE')}
-                disabled={commandLoading}
-                className="px-3 py-1.5 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors disabled:opacity-50"
-              >
-                Start Live
-              </button>
-              <button
-                onClick={() => sendCommand('STOP-LIVE')}
-                disabled={commandLoading}
-                className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors disabled:opacity-50"
-              >
-                Stop Live
+                Delete All
               </button>
             </div>
-          </div>
-
-          {/* Delete All button */}
-          <div>
-            <button
-              onClick={() => setDeleteAllConfirm(true)}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
-            >
-              Delete All
-            </button>
-          </div>
+          )}
         </div>
       </div>
 
@@ -423,6 +473,65 @@ const PhotosPage: React.FC = () => {
         </div>
       )}
 
+      {/* Upload Photo Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
+            <h3 className="text-lg font-semibold text-sky-700 mb-4">Upload Photo</h3>
+            <form onSubmit={handleUploadPhoto}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Choose Photo
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100"
+                  required
+                />
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Associate with Device (Optional)
+                </label>
+                <select
+                  value={selectedDevice}
+                  onChange={(e) => setSelectedDevice(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-500"
+                >
+                  <option value="all">Default (web_upload)</option>
+                  {devices.map(device => (
+                    <option key={device.id} value={device.device_id}>
+                      {device.device_id} - {device.device_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setShowUploadModal(false); setUploadFile(null); }}
+                  className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded-md transition-colors"
+                  disabled={uploadLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors"
+                  disabled={uploadLoading || !uploadFile}
+                >
+                  {uploadLoading ? 'Uploading...' : 'Upload'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Photos section with fixed height and scroll */}
       <div className="bg-gray-50 p-4 rounded-lg shadow-sm overflow-y-auto max-h-[60vh]">
         {/* Loading state */}
@@ -454,11 +563,13 @@ const PhotosPage: React.FC = () => {
                     key={photo.id}
                     photoId={photo.id}
                     imageUrl={photo.presigned_url}
+                    timestamp={photo.timestamp}
+                    userEmail={isAdmin ? photo.user_email : undefined}
                     extractedText={photo.text}
                     altText={`Photo from ${new Date(photo.timestamp).toLocaleDateString()}`}
                     onDelete={handleDeletePhoto}
                     onUpdate={handleUpdatePhoto}
-                    medicalData={photo}
+                    medicalData={photo.medical_data}
                   />
                 ))}
               </div>

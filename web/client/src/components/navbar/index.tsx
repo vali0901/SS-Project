@@ -10,7 +10,7 @@ interface ButtonProps {
 }
 
 interface NavbarProps {
-  title: string;
+  title: React.ReactNode;
   leftButtons?: ButtonProps[];
   rightButtons?: ButtonProps[];
 }

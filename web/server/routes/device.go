@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"go.mongodb.org/mongo-driver/mongo"
+	"gorm.io/gorm"
 
 	"mqtt-streaming-server/domain"
 	"mqtt-streaming-server/repository"
@@ -17,16 +17,57 @@ type DeviceController struct {
 	mqttClient       mqtt.Client
 }
 
-func InitDeviceRoutes(db *mongo.Database, mqttClient mqtt.Client, mux *http.ServeMux) {
+func InitDeviceRoutes(db *gorm.DB, mqttClient mqtt.Client, mux *http.ServeMux) {
 	deviceController := &DeviceController{
 		DeviceRepository: repository.NewDeviceRepository(db),
 		mqttClient:       mqttClient,
 	}
 
-	// TODO: Implement authentication - See docs/AUTH_IMPLEMENTATION.md
 	mux.Handle("/devices", withAuth(http.HandlerFunc(deviceController.GetDevices)))
+	mux.Handle("/devices/claim", withAuth(http.HandlerFunc(deviceController.ClaimDevice)))
 	mux.Handle("/devices/switch", withAuth(http.HandlerFunc(deviceController.SwitchDeviceMode)))
 	mux.Handle("/devices/command", withAuth(http.HandlerFunc(deviceController.SendCommand)))
+}
+
+func (ctlr DeviceController) ClaimDevice(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx := r.Context()
+	userEmail, _ := ctx.Value("email").(string)
+
+	var req struct {
+		DeviceID string `json:"device_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Check if device exists
+	device, err := ctlr.DeviceRepository.GetByID(ctx, req.DeviceID)
+	if err != nil {
+		http.Error(w, "Device not found", http.StatusNotFound)
+		return
+	}
+
+	// Check if already claimed
+	if device.UserEmail != "" && device.UserEmail != userEmail {
+		http.Error(w, "Device already claimed by another user", http.StatusConflict)
+		return
+	}
+
+	// Update ownership
+	device.UserEmail = userEmail
+	if err := ctlr.DeviceRepository.Update(ctx, device.DeviceID, device); err != nil {
+		http.Error(w, "Failed to claim device", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(device)
 }
 
 func (ctlr DeviceController) SwitchDeviceMode(w http.ResponseWriter, r *http.Request) {
@@ -35,21 +76,33 @@ func (ctlr DeviceController) SwitchDeviceMode(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	ctx := r.Context()
+	userEmail, _ := ctx.Value("email").(string)
+	role, _ := ctx.Value("role").(string)
 
-
-
-
-	var device struct {
+	var req struct {
 		ID   string `json:"id"`
 		Mode string `json:"mode"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&device); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	// Check ownership
+	device, err := ctlr.DeviceRepository.GetByID(ctx, req.ID)
+	if err != nil {
+		http.Error(w, "Device not found", http.StatusNotFound)
+		return
+	}
+
+	if role != "admin" && device.UserEmail != userEmail {
+		http.Error(w, "Unauthorized", http.StatusForbidden)
+		return
+	}
+
 	topic := fmt.Sprintf("setup/%s", device.ID)
-	if token := ctlr.mqttClient.Publish(topic, 0, false, "start "+device.Mode); token.Wait() && token.Error() != nil {
+	if token := ctlr.mqttClient.Publish(topic, 0, false, "start "+req.Mode); token.Wait() && token.Error() != nil {
 		http.Error(w, "Failed to publish message", http.StatusInternalServerError)
 		return
 	}
@@ -64,18 +117,26 @@ func (ctlr DeviceController) GetDevices(w http.ResponseWriter, r *http.Request) 
 	}
 
 	ctx := r.Context()
+	userEmail, _ := ctx.Value("email").(string)
+	role, _ := ctx.Value("role").(string)
 
-
-
-	// Fetch devices from the database
+	// Fetch all devices
 	devices, err := ctlr.DeviceRepository.GetAllDevices(ctx)
 	if err != nil {
 		http.Error(w, "Failed to fetch devices", http.StatusInternalServerError)
 		return
 	}
 
+	// Filter based on ownership if not admin
+	filteredDevices := make([]*domain.Device, 0)
+	for _, d := range devices {
+		if role == "admin" || d.UserEmail == userEmail || d.UserEmail == "" {
+			filteredDevices = append(filteredDevices, d)
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(devices)
+	json.NewEncoder(w).Encode(filteredDevices)
 }
 
 func (ctlr DeviceController) SendCommand(w http.ResponseWriter, r *http.Request) {
@@ -84,6 +145,9 @@ func (ctlr DeviceController) SendCommand(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	ctx := r.Context()
+	userEmail, _ := ctx.Value("email").(string)
+	role, _ := ctx.Value("role").(string)
 
 	var request struct {
 		DeviceID string `json:"device_id"`
@@ -91,6 +155,18 @@ func (ctlr DeviceController) SendCommand(w http.ResponseWriter, r *http.Request)
 	}
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Check ownership
+	device, err := ctlr.DeviceRepository.GetByID(ctx, request.DeviceID)
+	if err != nil {
+		http.Error(w, "Device not found", http.StatusNotFound)
+		return
+	}
+
+	if role != "admin" && device.UserEmail != userEmail {
+		http.Error(w, "Unauthorized", http.StatusForbidden)
 		return
 	}
 

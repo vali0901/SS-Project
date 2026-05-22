@@ -2,36 +2,45 @@ package repository
 
 import (
 	"context"
-
-	"go.mongodb.org/mongo-driver/mongo"
-
 	"mqtt-streaming-server/domain"
+
+	"gorm.io/gorm"
 )
 
 type UserRepository struct {
-	db *mongo.Database
+	db *gorm.DB
 }
 
-func NewUserRepository(db *mongo.Database) *UserRepository {
+func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (repo *UserRepository) Save(ctx context.Context, email, password string) error {
-	collection := repo.db.Collection("users")
-	_, err := collection.InsertOne(ctx, domain.User{
+func (r *UserRepository) Save(ctx context.Context, email, password, role string) error {
+	if role == "" {
+		role = "user"
+	}
+	user := &domain.User{
 		Email:    email,
 		Password: password,
-		Role:     "user",
-	})
-	return err
+		Role:     role,
+	}
+	return r.db.WithContext(ctx).Create(user).Error
 }
 
-func (repo *UserRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
-	collection := repo.db.Collection("users")
+func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var user domain.User
-	err := collection.FindOne(ctx, map[string]string{"email": email}).Decode(&user)
-	if err != nil {
-		return nil, err
+	result := r.db.WithContext(ctx).Where("email = ?", email).Limit(1).Find(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return nil, gorm.ErrRecordNotFound
 	}
 	return &user, nil
+}
+
+func (r *UserRepository) GetAll(ctx context.Context) ([]*domain.User, error) {
+	var users []*domain.User
+	err := r.db.WithContext(ctx).Find(&users).Error
+	return users, err
 }
