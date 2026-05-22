@@ -453,35 +453,6 @@ const PhotosPage: React.FC = () => {
           {/* Separator */}
           <div className="w-px h-10 bg-gray-300 mx-2 hidden md:block"></div>
 
-          {/* ESP Camera Controls */}
-          <div className="flex items-center gap-3 bg-gray-50 p-2 rounded-md border border-gray-200">
-            <span className="text-sm font-medium text-gray-700 whitespace-nowrap">ESP Camera:</span>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => sendCommand('CAPTURE')}
-                disabled={commandLoading}
-                className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
-              >
-                Capture
-              </button>
-              <button
-                onClick={() => sendCommand('START-LIVE')}
-                disabled={commandLoading}
-                className="px-3 py-1.5 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-colors disabled:opacity-50"
-              >
-                Start Live
-              </button>
-              <button
-                onClick={() => sendCommand('STOP-LIVE')}
-                disabled={commandLoading}
-                className="px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors disabled:opacity-50"
-              >
-                Stop Live
-              </button>
-            </div>
-          </div>
-
           {/* Delete All button - admin only */}
           {isAdmin && (
             <div>
@@ -551,7 +522,7 @@ const PhotosPage: React.FC = () => {
                   required
                 />
               </div>
-              
+
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Associate with Device (Optional)
