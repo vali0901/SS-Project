@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import PhotoCard from '../../components/photosCards';
-import { useAuth } from '../../contexts/AuthContextState';
 import { apiFetch } from '../../utils/api';
 import type { Photo } from '../../types/photo';
 
@@ -61,8 +60,6 @@ const PhotosPage: React.FC = () => {
   // Command state
   const [commandLoading, setCommandLoading] = useState(false);
   const [commandMessage, setCommandMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-
-  const { isAdmin } = useAuth();
 
   // Clear command message after 3 seconds
   useEffect(() => {
@@ -459,7 +456,6 @@ const PhotosPage: React.FC = () => {
                     imageUrl={photo.presigned_url}
                     extractedText={photo.text}
                     altText={`Photo from ${new Date(photo.timestamp).toLocaleDateString()}`}
-                    isAdmin={isAdmin}
                     onDelete={handleDeletePhoto}
                     onUpdate={handleUpdatePhoto}
                     medicalData={photo}

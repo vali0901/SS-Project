@@ -8,7 +8,6 @@ interface PhotoCardProps {
   imageUrl: string;
   altText?: string;
   extractedText?: string;
-  isAdmin?: boolean;
   onDelete?: (photoId: string) => void;
   onUpdate?: (photoId: string, updatedData: Partial<Photo>) => Promise<void>;
   medicalData?: MedicalData;
@@ -19,7 +18,6 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
   imageUrl,
   altText = 'Photo',
   extractedText = '',
-  isAdmin = false,
   onDelete,
   onUpdate,
   medicalData
@@ -27,6 +25,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
   const [isZoomed, setIsZoomed] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [editingField, setEditingField] = useState<keyof MedicalData | null>(null);
   const [editData, setEditData] = useState<MedicalData | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -107,10 +106,10 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
     setIsSaving(true);
     try {
       const validatedData = JSON.parse(JSON.stringify(medicalData)) as MedicalData;
-      Object.keys(validatedData).forEach(key => {
-        const field = (validatedData as any)[key] as ExtractedField<any>;
+      (Object.keys(validatedData) as Array<keyof MedicalData>).forEach(key => {
+        const field = validatedData[key];
         if (field && typeof field === 'object' && 'value' in field) {
-          field.is_validated = true;
+          (field as ExtractedField<unknown>).is_validated = true;
         }
       });
       await onUpdate(photoId, validatedData as Partial<Photo>);
@@ -127,8 +126,9 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
     setIsSaving(true);
     try {
       const validatedData = JSON.parse(JSON.stringify(medicalData)) as MedicalData;
-      if ((validatedData as any)[key]) {
-        (validatedData as any)[key].is_validated = true;
+      const field = validatedData[key];
+      if (field) {
+        (field as ExtractedField<unknown>).is_validated = true;
       }
       await onUpdate(photoId, validatedData as Partial<Photo>);
     } catch (error) {
@@ -138,17 +138,17 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
     }
   };
 
-  const handleFieldChange = (key: keyof MedicalData, value: any) => {
+  const handleFieldChange = (key: keyof MedicalData, value: string | boolean) => {
     if (editData) {
       setEditData({
         ...editData,
         [key]: {
-          ...(editData[key] as ExtractedField<any>),
+          ...(editData[key] as ExtractedField<unknown>),
           value: value,
           is_edited: true,
           is_validated: true
         }
-      });
+      } as MedicalData);
     }
   };
 
@@ -157,7 +157,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
     const field = isFieldEditing ? (editData ? editData[key] : null) : (medicalData ? medicalData[key] : null);
     if (!field) return null;
 
-    const typedField = field as ExtractedField<any>;
+    const typedField = field as ExtractedField<unknown>;
 
     return (
       <div className={`p-2 mb-2 rounded border transition-all ${getConfidenceBg(typedField.confidence, typedField.is_edited, typedField.is_validated)}`}>
@@ -213,7 +213,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
             ) : (
               <input
                 type="text"
-                value={typedField.value || ''}
+                value={(typedField.value as string) || ''}
                 onChange={(e) => handleFieldChange(key, e.target.value)}
                 className="w-full px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-sky-500 bg-white"
                 autoFocus
@@ -237,7 +237,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
           </div>
         ) : (
           <div className="text-sm font-medium text-gray-800 break-words leading-tight">
-            {isBool ? (typedField.value ? 'Yes' : 'No') : (typedField.value || 'N/A')}
+            {isBool ? (typedField.value ? 'Yes' : 'No') : ((typedField.value as string) || 'N/A')}
           </div>
         )}
       </div>
@@ -246,11 +246,13 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
 
   const needsReview = medicalData ? Object.values(medicalData).some(field => {
     if (field && typeof field === 'object' && field !== null && 'confidence' in field) {
-      const typedField = field as ExtractedField<any>;
+      const typedField = field as ExtractedField<unknown>;
       return typedField.confidence < 0.95 && !typedField.is_validated && !typedField.is_edited;
     }
     return false;
   }) : false;
+
+  const timestamp = medicalData && 'timestamp' in medicalData ? (medicalData as Photo).timestamp : 0;
 
   return (
     <>
@@ -304,7 +306,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         {/* Footer info */}
         <div className="p-2 border-t border-gray-100 bg-white flex justify-between items-center shrink-0">
           <span className="text-[10px] text-gray-400 font-mono tracking-tighter">{photoId.slice(-8)}</span>
-          <span className="text-[10px] text-gray-500 font-medium">{new Date(medicalData?.timestamp || 0).toLocaleDateString()}</span>
+          <span className="text-[10px] text-gray-500 font-medium">{new Date(timestamp).toLocaleDateString()}</span>
         </div>
 
         {/* Delete confirmation dialog */}
