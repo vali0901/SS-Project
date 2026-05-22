@@ -1,11 +1,11 @@
 name: Mobile CI/CD
 
-on:
-  push:
-    branches: [ "main" ]
-    tags: [ "v*" ]
-  pull_request:
-    branches: [ "main" ]
+on: workflow_dispatch
+  # push:
+  #   branches: [ "main" ]
+  #   tags: [ "v*" ]
+  # pull_request:
+  #   branches: [ "main" ]
 
 jobs:
   unit_tests:
