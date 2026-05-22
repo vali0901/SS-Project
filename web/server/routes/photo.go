@@ -29,7 +29,18 @@ func InitPhotoRoutes(db *mongo.Database, mux *http.ServeMux) {
 	// TODO: Implement authentication - See docs/AUTH_IMPLEMENTATION.md
 	mux.Handle("/photos", withAuth(http.HandlerFunc(photoController.GetPhotos)))
 	mux.Handle("/photos/all", withAuth(http.HandlerFunc(photoController.DeleteAllPhotos)))
-	mux.Handle("/photos/", withAuth(http.HandlerFunc(photoController.DeletePhoto)))
+	mux.Handle("/photos/", withAuth(http.HandlerFunc(photoController.HandlePhotoByID)))
+}
+
+func (ctlr PhotoController) HandlePhotoByID(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodDelete {
+		ctlr.DeletePhoto(w, r)
+		return
+	} else if r.Method == http.MethodPatch || r.Method == http.MethodPut {
+		ctlr.UpdatePhoto(w, r)
+		return
+	}
+	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 }
 
 func (ctlr PhotoController) GetPhotos(w http.ResponseWriter, r *http.Request) {
@@ -99,15 +110,41 @@ func (ctlr PhotoController) GetPhotos(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(photos)
 }
 
-func (ctlr PhotoController) DeletePhoto(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+func (ctlr PhotoController) UpdatePhoto(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	path := strings.TrimPrefix(r.URL.Path, "/photos/")
+	if path == "" {
+		http.Error(w, "Photo ID required", http.StatusBadRequest)
+		return
+	}
+	photoID := path
+
+	var update map[string]any
+	if err := json.NewDecoder(r.Body).Decode(&update); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	// Remove fields that should not be updated manually to prevent data corruption
+	// especially timestamp which must remain a native BSON Date
+	delete(update, "id")
+	delete(update, "timestamp")
+	delete(update, "presigned_url")
+	delete(update, "device_id")
+
+	err := ctlr.PhotoRepository.Update(ctx, photoID, update)
+	if err != nil {
+		fmt.Println("Error updating photo:", err)
+		http.Error(w, "Failed to update photo", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Photo updated successfully"})
+}
+
+func (ctlr PhotoController) DeletePhoto(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
-
 
 	// Extract photo ID from URL path: /photos/{id}
 	path := strings.TrimPrefix(r.URL.Path, "/photos/")
@@ -151,8 +188,6 @@ func (ctlr PhotoController) DeleteAllPhotos(w http.ResponseWriter, r *http.Reque
 	}
 
 	ctx := r.Context()
-
-
 
 	// Delete all photos from database
 	deletedCount, err := ctlr.PhotoRepository.DeleteAll(ctx)

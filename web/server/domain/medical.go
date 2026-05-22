@@ -4,8 +4,10 @@ import "time"
 
 // ExtractedField este un wrapper generic pentru a stoca valoarea și scorul de încredere (0.0 - 1.0)
 type ExtractedField[T any] struct {
-	Value      T       `json:"value" bson:"value"`
-	Confidence float64 `json:"confidence" bson:"confidence"`
+	Value       T       `json:"value" bson:"value"`
+	Confidence  float64 `json:"confidence" bson:"confidence"`
+	IsEdited    bool    `json:"is_edited" bson:"is_edited"`
+	IsValidated bool    `json:"is_validated" bson:"is_validated"`
 }
 
 // MedicalData reprezinta datele structurate extrase din fisa de aptitudine medicala

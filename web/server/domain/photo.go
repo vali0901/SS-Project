@@ -23,6 +23,7 @@ type PhotoRepository interface {
 	GetPhotos(ctx context.Context, filters map[string]any) ([]*Photo, error)
 	GetByID(ctx context.Context, id string) (*Photo, error)
 	Save(ctx context.Context, photo *Photo) error
+	Update(ctx context.Context, id string, update any) error
 	Delete(ctx context.Context, id string) error
 	DeleteAll(ctx context.Context) (int64, error)
 }

@@ -18,7 +18,7 @@ func NewDeviceRepository(db *mongo.Database) *deviceRepository {
 
 func (repo *deviceRepository) GetAllDevices(ctx context.Context) ([]*domain.Device, error) {
 	collection := repo.db.Collection("devices")
-	var devices []*domain.Device
+	devices := make([]*domain.Device, 0)
 	cursor, err := collection.Find(ctx, map[string]any{})
 	if err != nil {
 		return nil, err

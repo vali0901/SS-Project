@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContextState';
 import { apiFetch } from '../../utils/api';
+import type { Photo } from '../../types/photo';
 import {
     BarChart,
     Bar,
@@ -14,25 +15,6 @@ import {
     Pie,
     Cell,
 } from 'recharts';
-
-// Interface for photo data, including the new boolean fields
-interface Photo {
-    id: string;
-    timestamp: string;
-
-    // Boolean fields from backend
-    control_angajare?: boolean;
-    control_periodic?: boolean;
-    control_adaptare?: boolean;
-    control_reluare?: boolean;
-    control_supraveghere?: boolean;
-    control_alte?: boolean;
-
-    aviz_apt?: boolean;
-    aviz_apt_conditionat?: boolean;
-    aviz_inapt_temporar?: boolean;
-    aviz_inapt?: boolean;
-}
 
 const StatisticsPage: React.FC = () => {
     const { token } = useAuth();
@@ -101,12 +83,12 @@ const StatisticsPage: React.FC = () => {
         };
 
         photos.forEach(photo => {
-            if (photo.control_angajare) stats['Angajare']++;
-            if (photo.control_periodic) stats['Periodic']++;
-            if (photo.control_adaptare) stats['Adaptare']++;
-            if (photo.control_reluare) stats['Reluare']++;
-            if (photo.control_supraveghere) stats['Supraveghere']++;
-            if (photo.control_alte) stats['Alte']++;
+            if (photo.control_angajare?.value) stats['Angajare']++;
+            if (photo.control_periodic?.value) stats['Periodic']++;
+            if (photo.control_adaptare?.value) stats['Adaptare']++;
+            if (photo.control_reluare?.value) stats['Reluare']++;
+            if (photo.control_supraveghere?.value) stats['Supraveghere']++;
+            if (photo.control_alte?.value) stats['Alte']++;
         });
 
         return Object.entries(stats).map(([name, value]) => ({ name, value }));
@@ -121,10 +103,10 @@ const StatisticsPage: React.FC = () => {
         };
 
         photos.forEach(photo => {
-            if (photo.aviz_apt) stats['APT']++;
-            if (photo.aviz_apt_conditionat) stats['APT Conditionat']++;
-            if (photo.aviz_inapt_temporar) stats['Inapt Temporar']++;
-            if (photo.aviz_inapt) stats['Inapt']++;
+            if (photo.aviz_apt?.value) stats['APT']++;
+            if (photo.aviz_apt_conditionat?.value) stats['APT Conditionat']++;
+            if (photo.aviz_inapt_temporar?.value) stats['Inapt Temporar']++;
+            if (photo.aviz_inapt?.value) stats['Inapt']++;
         });
 
         return Object.entries(stats).map(([name, value]) => ({ name, value }));

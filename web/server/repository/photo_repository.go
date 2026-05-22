@@ -50,6 +50,20 @@ func (repo *photoRepository) Save(ctx context.Context, photo *domain.Photo) erro
 	return err
 }
 
+func (repo *photoRepository) Update(ctx context.Context, id string, update any) error {
+	collection := repo.db.Collection("photos")
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	// If update is a map, we use it directly with $set
+	// If it's a struct, we should be careful about zero values
+	// The controller will now pass a map for partial updates
+	_, err = collection.UpdateOne(ctx, map[string]any{"_id": objID}, map[string]any{"$set": update})
+	return err
+}
+
 func (repo *photoRepository) GetByID(ctx context.Context, id string) (*domain.Photo, error) {
 	collection := repo.db.Collection("photos")
 	objID, err := primitive.ObjectIDFromHex(id)
