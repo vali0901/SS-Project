@@ -19,9 +19,6 @@ const RegisterPage: React.FC = () => {
     try {
       const response = await apiFetch('/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ email, password }),
       });
       

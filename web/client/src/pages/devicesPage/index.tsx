@@ -33,7 +33,7 @@ const DevicesPage: React.FC = () => {
   // Track status of actions for individual devices
   const [deviceActionStates, setDeviceActionStates] = useState<DeviceActionState>({});
 
-  const { token } = useAuth();
+  useAuth();
 
   // Fetch broker info
   useEffect(() => {
@@ -58,13 +58,7 @@ const DevicesPage: React.FC = () => {
       setError(null);
 
       try {
-        const response = await apiFetch('/devices', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+        const response = await apiFetch('/devices');
 
         if (!response.ok) {
           throw new Error(`Failed to fetch devices: ${response.status} ${response.statusText}`);
@@ -101,7 +95,7 @@ const DevicesPage: React.FC = () => {
     };
 
     fetchDevices();
-  }, [token]);
+  }, []);
 
   // Clear success/error messages after delay
   useEffect(() => {
@@ -140,10 +134,6 @@ const DevicesPage: React.FC = () => {
     try {
       const response = await apiFetch('/devices/command', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           device_id: deviceId,
           command: command

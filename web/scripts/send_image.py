@@ -121,7 +121,6 @@ client.on_connect = on_connect
 client.on_publish = on_publish
 
 client.tls_set(ca_certs=CA_CRT, certfile=CLIENT_CRT, keyfile=CLIENT_KEY, tls_version=ssl.PROTOCOL_TLSv1_2)
-client.tls_insecure_set(True)
 
 print(f"Device ID: {DEVICE_ID}")
 print(f"Connecting to {BROKER}:{PORT}...")

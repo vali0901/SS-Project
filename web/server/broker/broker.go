@@ -86,7 +86,7 @@ func (b BrokerHandler) HandlePhoto(_ mqtt.Client, msg mqtt.Message) {
 	}
 	
 	// Try to extract structured medical data
-	var medicalData *utils.MedicalData
+	var medicalData *domain.MedicalData
 	if utils.IsMedicalCertificate(text) {
 		medicalData = utils.ParseMedicalCertificate(text)
 		if medicalData != nil {
@@ -97,7 +97,7 @@ func (b BrokerHandler) HandlePhoto(_ mqtt.Client, msg mqtt.Message) {
 	// UTC timestamp
 	timestamp := time.Now().UTC()
 	
-	// Create photo with flattened medical data
+	// Create photo with embedded medical data
 	photo := &domain.Photo{
 		ImageType: imageType,
 		Timestamp: timestamp,
@@ -105,37 +105,9 @@ func (b BrokerHandler) HandlePhoto(_ mqtt.Client, msg mqtt.Message) {
 		Text:      text,
 	}
 	
-	// Copy medical data fields directly to photo (flattened)
+	// Copy medical data fields directly to photo
 	if medicalData != nil {
-		photo.UnitateMedicala = medicalData.UnitateMedicala
-		photo.AdresaUnitateMedicala = medicalData.AdresaUnitateMedicala
-		photo.TelefonUnitateMedicala = medicalData.TelefonUnitateMedicala
-		photo.NumarFisa = medicalData.NumarFisa
-		photo.SocietateUnitate = medicalData.SocietateUnitate
-		photo.AdresaAngajator = medicalData.AdresaAngajator
-		photo.TelefonAngajator = medicalData.TelefonAngajator
-		photo.Nume = medicalData.Nume
-		photo.Prenume = medicalData.Prenume
-		photo.CNP = medicalData.CNP
-		photo.ProfesieFunctie = medicalData.ProfesieFunctie
-		photo.LocDeMunca = medicalData.LocDeMunca
-		photo.TipControl = medicalData.TipControl
-		photo.ControlAngajare = medicalData.ControlAngajare
-		photo.ControlPeriodic = medicalData.ControlPeriodic
-		photo.ControlAdaptare = medicalData.ControlAdaptare
-		photo.ControlReluare = medicalData.ControlReluare
-		photo.ControlSupraveghere = medicalData.ControlSupraveghere
-		photo.ControlAlte = medicalData.ControlAlte
-
-		photo.AvizMedical = medicalData.AvizMedical
-		photo.AvizApt = medicalData.AvizApt
-		photo.AvizAptConditionat = medicalData.AvizAptConditionat
-		photo.AvizInaptTemporar = medicalData.AvizInaptTemporar
-		photo.AvizInapt = medicalData.AvizInapt
-
-		photo.Recomandari = medicalData.Recomandari
-		photo.Data = medicalData.Data
-		photo.DataUrmExaminari = medicalData.DataUrmExaminari
+		photo.MedicalData = *medicalData
 	}
 	
 	err = b.photoRepository.Save(ctx, photo)

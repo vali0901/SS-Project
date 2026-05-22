@@ -1,24 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import PhotoCard from '../../components/photosCards';
-import { useAuth } from '../../contexts/AuthContextState';
 import { apiFetch } from '../../utils/api';
+import type { Photo } from '../../types/photo';
+
 // Interface for device data
 interface Device {
   id: string;
   device_id: string;
   device_name: string;
   device_status: string;
-}
-
-
-// Interface for photo data
-interface Photo {
-  id: string;
-  timestamp: string;
-  image_type: string;
-  presigned_url: string;
-  device_id: string;
-  text: string;
 }
 
 // Interface for search parameters to store in localStorage
@@ -71,8 +61,6 @@ const PhotosPage: React.FC = () => {
   const [commandLoading, setCommandLoading] = useState(false);
   const [commandMessage, setCommandMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  const { token, isAdmin } = useAuth();
-
   // Clear command message after 3 seconds
   useEffect(() => {
     if (commandMessage) {
@@ -102,20 +90,14 @@ const PhotosPage: React.FC = () => {
       setDeviceError(false);
 
       try {
-        const response = await apiFetch('/devices', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+        const response = await apiFetch('/devices');
 
         if (!response.ok) {
           throw new Error('Failed to fetch devices');
         }
 
         const data = await response.json();
-        setDevices(data);
+        setDevices(Array.isArray(data) ? data : []);
 
       } catch (error) {
         console.error('Error fetching devices:', error);
@@ -126,7 +108,7 @@ const PhotosPage: React.FC = () => {
     };
 
     fetchDevices();
-  }, [token]);
+  }, []);
 
   // Initial search on page load
   useEffect(() => {
@@ -158,13 +140,7 @@ const PhotosPage: React.FC = () => {
       }
 
       // Make API request
-      const response = await apiFetch(`/photos?${queryParams.toString()}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await apiFetch(`/photos?${queryParams.toString()}`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch photos: ${response.status} ${response.statusText}`);
@@ -187,10 +163,6 @@ const PhotosPage: React.FC = () => {
     try {
       const response = await apiFetch(`/photos/${photoId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
       });
 
       if (!response.ok) {
@@ -205,15 +177,30 @@ const PhotosPage: React.FC = () => {
     }
   };
 
+  const handleUpdatePhoto = async (photoId: string, updatedData: Partial<Photo>) => {
+    try {
+      const response = await apiFetch(`/photos/${photoId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updatedData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update photo');
+      }
+
+      // Update the photo in state
+      setPhotos(photos.map(p => p.id === photoId ? { ...p, ...updatedData } : p));
+    } catch (error) {
+      console.error('Error updating photo:', error);
+      alert('Failed to update photo');
+    }
+  };
+
   const handleDeleteAllPhotos = async () => {
     setDeletingAll(true);
     try {
       const response = await apiFetch('/photos/all', {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
       });
 
       if (!response.ok) {
@@ -243,10 +230,6 @@ const PhotosPage: React.FC = () => {
     try {
       const response = await apiFetch('/devices/command', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           device_id: targetDeviceId,
           command: command
@@ -473,8 +456,9 @@ const PhotosPage: React.FC = () => {
                     imageUrl={photo.presigned_url}
                     extractedText={photo.text}
                     altText={`Photo from ${new Date(photo.timestamp).toLocaleDateString()}`}
-                    isAdmin={isAdmin}
                     onDelete={handleDeletePhoto}
+                    onUpdate={handleUpdatePhoto}
+                    medicalData={photo}
                   />
                 ))}
               </div>
