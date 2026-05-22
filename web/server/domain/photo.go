@@ -11,6 +11,7 @@ type Photo struct {
 	ImageType    string    `json:"image_type" gorm:"type:varchar(50)"`
 	PresignedURL string    `json:"presigned_url" gorm:"-"` // Not stored in DB, generated on the fly
 	DeviceID     string    `json:"device_id" gorm:"type:varchar(100);index"`
+	UserEmail    string    `json:"user_email" gorm:"type:varchar(255);index"`
 	Text         string    `json:"text" gorm:"type:text"`
 
 	// Medical Data Fields - Stored as a single JSONB column

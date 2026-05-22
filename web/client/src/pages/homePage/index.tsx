@@ -5,12 +5,11 @@ const HomePage: React.FC = () => {
   return (
     <div className="container mx-auto px-4 flex flex-col items-center justify-center min-h-[80vh]">
       <div className="flex flex-col items-center text-center max-w-3xl">
-        <img src={logo} alt="Security of Systems - First Force Logo" className="w-48 h-48 mb-8" />
-        
+        <img src={logo} alt="Security of Systems - Fetitele Powerpuff Logo" className="w-48 h-48 mb-8" />
+
         <h1 className="text-4xl font-bold text-sky-700 mb-4">
-          Security of Systems - First Force
-        </h1>
-        
+          Security of Systems - Fetitele Powerpuff
+        </h1>        
         <p className="text-lg text-gray-600 mb-8">
           An advanced system for capturing images, extracting text content, and providing powerful search capabilities.
         </p>

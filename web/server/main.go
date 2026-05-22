@@ -108,13 +108,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	if token := client.Subscribe("auth/login/#", 0, brokerHandler.HandleLogin); token.Wait() && token.Error() != nil {
+		fmt.Println(token.Error())
+		os.Exit(1)
+	}
+
 	if token := client.Subscribe("device/id/#", 0, brokerHandler.DisconnectDevice); token.Wait() && token.Error() != nil {
 		fmt.Println(token.Error())
 		os.Exit(1)
 	}
 
 	// Initialize routes
-	handler := routes.InitRoutes(db, client)
+	handler := routes.InitRoutes(db, client, ocrClient)
 
 	go func() {
 		fmt.Println("Starting HTTP server on port 8080...")

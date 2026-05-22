@@ -6,10 +6,11 @@ import { useAuth } from '../contexts/AuthContextState';
 
 interface ProtectedRouteProps {
   authRequired: boolean;
+  adminOnly?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ authRequired }) => {
-  const { isLoggedIn, loading } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ authRequired, adminOnly = false }) => {
+  const { isLoggedIn, isAdmin, loading } = useAuth();
 
   // While auth state is loading, show a loading spinner
   if (loading) {
@@ -23,6 +24,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ authRequired }) => {
   // If auth is required and user is not logged in, redirect to login
   if (authRequired && !isLoggedIn) {
     return <Navigate to="/login" replace />;
+  }
+
+  // If admin access is required but user is not an admin, redirect to home
+  if (adminOnly && !isAdmin) {
+    return <Navigate to="/" replace />;
   }
 
   // If auth is not required (e.g. login/register pages) and user is logged in, redirect to root

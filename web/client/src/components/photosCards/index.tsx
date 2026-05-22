@@ -7,6 +7,7 @@ interface PhotoCardProps {
   photoId: string;
   imageUrl: string;
   timestamp: string;
+  userEmail?: string;
   altText?: string;
   extractedText?: string;
   onDelete?: (photoId: string) => void;
@@ -18,6 +19,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
   photoId,
   imageUrl,
   timestamp,
+  userEmail,
   altText = 'Photo',
   extractedText = '',
   onDelete,
@@ -305,9 +307,16 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
         </div>
 
         {/* Footer info */}
-        <div className="p-2 border-t border-gray-100 bg-white flex justify-between items-center shrink-0">
-          <span className="text-[10px] text-gray-400 font-mono tracking-tighter">{photoId.slice(-8)}</span>
-          <span className="text-[10px] text-gray-500 font-medium">{new Date(timestamp).toLocaleDateString()}</span>
+        <div className="p-2 border-t border-gray-100 bg-white flex flex-col gap-0.5 shrink-0">
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-gray-400 font-mono tracking-tighter">{photoId.slice(-8)}</span>
+            <span className="text-[10px] text-gray-500 font-medium">{new Date(timestamp).toLocaleDateString()}</span>
+          </div>
+          {userEmail && (
+            <div className="text-[9px] text-sky-600 font-bold truncate" title={`Owner: ${userEmail}`}>
+              {userEmail}
+            </div>
+          )}
         </div>
 
         {/* Delete confirmation dialog */}

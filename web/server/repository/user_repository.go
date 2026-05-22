@@ -15,11 +15,14 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (r *UserRepository) Save(ctx context.Context, email, password string) error {
+func (r *UserRepository) Save(ctx context.Context, email, password, role string) error {
+	if role == "" {
+		role = "user"
+	}
 	user := &domain.User{
 		Email:    email,
 		Password: password,
-		Role:     "user",
+		Role:     role,
 	}
 	return r.db.WithContext(ctx).Create(user).Error
 }
@@ -34,4 +37,10 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*domain
 		return nil, gorm.ErrRecordNotFound
 	}
 	return &user, nil
+}
+
+func (r *UserRepository) GetAll(ctx context.Context) ([]*domain.User, error) {
+	var users []*domain.User
+	err := r.db.WithContext(ctx).Find(&users).Error
+	return users, err
 }

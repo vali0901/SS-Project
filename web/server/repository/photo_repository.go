@@ -19,6 +19,10 @@ func NewPhotoRepository(db *gorm.DB) *photoRepository {
 func (r *photoRepository) GetPhotos(ctx context.Context, filters map[string]any) ([]*domain.Photo, error) {
 	query := r.db.WithContext(ctx).Model(&domain.Photo{})
 
+	if userEmail, ok := filters["user_email"].(string); ok && userEmail != "" {
+		query = query.Where("user_email = ?", userEmail)
+	}
+
 	if deviceID, ok := filters["device_id"].(string); ok && deviceID != "" {
 		query = query.Where("device_id = ?", deviceID)
 	}

@@ -3,20 +3,21 @@ package routes
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net"
 	"net/http"
 	"os"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/otiai10/gosseract/v2"
 	"gorm.io/gorm"
+
+	"mqtt-streaming-server/utils"
 )
 
-func InitRoutes(db *gorm.DB, mqttClient mqtt.Client) http.Handler {
+func InitRoutes(db *gorm.DB, mqttClient mqtt.Client, ocrClient *gosseract.Client) http.Handler {
 	mux := http.NewServeMux()
 	InitUserRoutes(db, mux)
-	InitPhotoRoutes(db, mux)
+	InitPhotoRoutes(db, ocrClient, mux)
 	InitDeviceRoutes(db, mqttClient, mux)
 
 	// Serve static files from ./uploads
@@ -116,35 +117,15 @@ func withAuth(next http.Handler) http.Handler {
 		}
 
 		tokenString := authHeader[len("Bearer "):] // Remove "Bearer " prefix
-		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-			return []byte(os.Getenv("JWT_SECRET")), nil
-		})
-		if err != nil || !token.Valid {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
+		claims, err := utils.VerifyToken(tokenString)
+		if err != nil {
+			http.Error(w, "Invalid token: "+err.Error(), http.StatusUnauthorized)
 			return
 		}
 
-		// Extract email and role from token claims
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok || !token.Valid {
-			http.Error(w, "Invalid token claims", http.StatusUnauthorized)
-			return
-		}
-		email, ok := claims["email"].(string)
-		if !ok {
-			http.Error(w, "Invalid token claims: email missing", http.StatusUnauthorized)
-			return
-		}
-		role, ok := claims["role"].(string)
-		if !ok {
-			role = "user" // Default role
-		}
 		// Store the email and role in the request context
-		ctx := context.WithValue(r.Context(), "email", email)
-		ctx = context.WithValue(ctx, "role", role)
+		ctx := context.WithValue(r.Context(), "email", claims.Email)
+		ctx = context.WithValue(ctx, "role", claims.Role)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

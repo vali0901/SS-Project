@@ -12,7 +12,7 @@ import { useAuth } from './contexts/AuthContextState';
 
 const Layout = () => {
   const navigate = useNavigate();
-  const { isLoggedIn, logout } = useAuth();
+  const { isLoggedIn, isAdmin, logout } = useAuth();
 
   // Left-side buttons (only shown when logged in)
   const leftButtons = isLoggedIn
@@ -63,7 +63,16 @@ const Layout = () => {
   return (
     <>
       <Navbar
-        title="Security of Systems - First Force"
+        title={
+          <div className="flex items-center gap-2">
+            <span>Security of Systems - Fetitele Powerpuff</span>
+            {isAdmin && (
+              <span className="bg-red-100 text-red-600 text-[10px] px-1.5 py-0.5 rounded border border-red-200 font-black uppercase tracking-widest">
+                Admin
+              </span>
+            )}
+          </div>
+        }
         leftButtons={leftButtons}
         rightButtons={rightButtons}
       />

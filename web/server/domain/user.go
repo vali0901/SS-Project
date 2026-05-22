@@ -9,6 +9,7 @@ type User struct {
 }
 
 type UserRepository interface {
-	Save(ctx context.Context, email, password string) error
+	Save(ctx context.Context, email, password, role string) error
 	FindByEmail(ctx context.Context, email string) (*User, error)
+	GetAll(ctx context.Context) ([]*User, error)
 }

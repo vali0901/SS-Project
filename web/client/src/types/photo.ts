@@ -42,6 +42,7 @@ export interface Photo {
   image_type: string;
   presigned_url: string;
   device_id: string;
+  user_email: string;
   text: string;
   medical_data: MedicalData;
 }

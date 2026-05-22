@@ -12,6 +12,7 @@ type Device struct {
 	DeviceStatus string    `json:"device_status" gorm:"type:varchar(50)"`
 	IPAddress    string    `json:"ip_address" gorm:"type:varchar(50)"`
 	Port         string    `json:"port" gorm:"type:varchar(10)"`
+	UserEmail    string    `json:"user_email" gorm:"type:varchar(255);index"`
 	LastSeen     time.Time `json:"last_seen"`
 }
 
