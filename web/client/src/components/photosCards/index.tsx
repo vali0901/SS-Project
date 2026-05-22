@@ -93,7 +93,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
     if (onUpdate && editData) {
       setIsSaving(true);
       try {
-        await onUpdate(photoId, { medical_data: editData } as any);
+        await onUpdate(photoId, { medical_data: editData } as unknown as Partial<Photo>);
         setEditingField(null);
         setEditData(null);
       } catch (error) {
@@ -116,7 +116,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
           (field as ExtractedField<unknown>).is_validated = true;
         }
       });
-      await onUpdate(photoId, { medical_data: validatedData } as any);
+      await onUpdate(photoId, { medical_data: validatedData } as unknown as Partial<Photo>);
     } catch (error) {
       console.error('Failed to validate data:', error);
     } finally {
@@ -134,7 +134,7 @@ const PhotoCard: React.FC<PhotoCardProps> = ({
       if (field) {
         (field as ExtractedField<unknown>).is_validated = true;
       }
-      await onUpdate(photoId, { medical_data: validatedData } as any);
+      await onUpdate(photoId, { medical_data: validatedData } as unknown as Partial<Photo>);
     } catch (error) {
       console.error('Failed to validate field:', error);
     } finally {

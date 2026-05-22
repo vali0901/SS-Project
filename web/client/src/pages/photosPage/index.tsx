@@ -54,7 +54,7 @@ const PhotosPage: React.FC = () => {
   const [deviceError, setDeviceError] = useState<boolean>(false);
   const [deviceLoading, setDeviceLoading] = useState<boolean>(true);
 
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<{ email: string; role: string }[]>([]);
   const [usersLoading, setUsersLoading] = useState<boolean>(false);
 
   // States for photos
@@ -70,7 +70,6 @@ const PhotosPage: React.FC = () => {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
 
   // Command state
-  const [commandLoading, setCommandLoading] = useState(false);
   const [commandMessage, setCommandMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   // Clear command message after 3 seconds
@@ -292,36 +291,6 @@ const PhotosPage: React.FC = () => {
       alert('Failed to delete all photos');
     } finally {
       setDeletingAll(false);
-    }
-  };
-
-  const sendCommand = async (command: 'CAPTURE' | 'START-LIVE' | 'STOP-LIVE') => {
-    // Determine device ID
-    // If a specific device is selected, use it. Otherwise, default to "camera_stream" (the unknown device default)
-    const targetDeviceId = selectedDevice !== 'all' ? selectedDevice : 'camera_stream';
-
-    setCommandLoading(true);
-    setCommandMessage(null);
-
-    try {
-      const response = await apiFetch('/devices/command', {
-        method: 'POST',
-        body: JSON.stringify({
-          device_id: targetDeviceId,
-          command: command
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to send command: ${response.status} ${response.statusText}`);
-      }
-
-      setCommandMessage({ type: 'success', text: `Command ${command} sent successfully` });
-    } catch (error) {
-      console.error(`Error sending command ${command}:`, error);
-      setCommandMessage({ type: 'error', text: (error as Error).message || 'Failed to send command' });
-    } finally {
-      setCommandLoading(false);
     }
   };
 
