@@ -26,7 +26,6 @@ func InitPhotoRoutes(db *mongo.Database, mux *http.ServeMux) {
 		PhotoRepository: repository.NewPhotoRepository(db),
 	}
 
-	// TODO: Implement authentication - See docs/AUTH_IMPLEMENTATION.md
 	mux.Handle("/photos", withAuth(http.HandlerFunc(photoController.GetPhotos)))
 	mux.Handle("/photos/all", withAuth(http.HandlerFunc(photoController.DeleteAllPhotos)))
 	mux.Handle("/photos/", withAuth(http.HandlerFunc(photoController.HandlePhotoByID)))

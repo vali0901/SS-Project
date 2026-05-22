@@ -17,7 +17,7 @@ import {
 } from 'recharts';
 
 const StatisticsPage: React.FC = () => {
-    const { token } = useAuth();
+    useAuth();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [photos, setPhotos] = useState<Photo[]>([]);
@@ -45,13 +45,7 @@ const StatisticsPage: React.FC = () => {
             queryParams.append('start', startTimestamp.toString());
             queryParams.append('end', endTimestamp.toString());
 
-            const response = await apiFetch(`/photos?${queryParams.toString()}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
+            const response = await apiFetch(`/photos?${queryParams.toString()}`);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch data');
@@ -65,7 +59,7 @@ const StatisticsPage: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [startDate, endDate, token]);
+    }, [startDate, endDate]);
 
     useEffect(() => {
         fetchData();

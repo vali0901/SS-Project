@@ -62,7 +62,7 @@ const PhotosPage: React.FC = () => {
   const [commandLoading, setCommandLoading] = useState(false);
   const [commandMessage, setCommandMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  const { token, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
 
   // Clear command message after 3 seconds
   useEffect(() => {
@@ -93,13 +93,7 @@ const PhotosPage: React.FC = () => {
       setDeviceError(false);
 
       try {
-        const response = await apiFetch('/devices', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+        const response = await apiFetch('/devices');
 
         if (!response.ok) {
           throw new Error('Failed to fetch devices');
@@ -117,7 +111,7 @@ const PhotosPage: React.FC = () => {
     };
 
     fetchDevices();
-  }, [token]);
+  }, []);
 
   // Initial search on page load
   useEffect(() => {
@@ -149,13 +143,7 @@ const PhotosPage: React.FC = () => {
       }
 
       // Make API request
-      const response = await apiFetch(`/photos?${queryParams.toString()}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await apiFetch(`/photos?${queryParams.toString()}`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch photos: ${response.status} ${response.statusText}`);
@@ -178,10 +166,6 @@ const PhotosPage: React.FC = () => {
     try {
       const response = await apiFetch(`/photos/${photoId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
       });
 
       if (!response.ok) {
@@ -200,10 +184,6 @@ const PhotosPage: React.FC = () => {
     try {
       const response = await apiFetch(`/photos/${photoId}`, {
         method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(updatedData),
       });
 
@@ -224,10 +204,6 @@ const PhotosPage: React.FC = () => {
     try {
       const response = await apiFetch('/photos/all', {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
       });
 
       if (!response.ok) {
@@ -257,10 +233,6 @@ const PhotosPage: React.FC = () => {
     try {
       const response = await apiFetch('/devices/command', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           device_id: targetDeviceId,
           command: command
