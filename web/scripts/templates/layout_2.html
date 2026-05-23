@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    body { font-family: '{{ font }}', sans-serif; padding: 20px; font-size: 10px; margin: 0; background: #fff; color: #000; }
+    .dual-page { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+    .half-form { border: 1px solid #000; padding: 15px; position: relative; box-sizing: border-box; }
+    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    .header-table td { border: none; padding: 1px; vertical-align: top; }
+    .doc-title { text-align: center; font-weight: bold; font-size: 12px; margin: 12px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+    .field-row { margin-bottom: 6px; display: flex; border-bottom: 1px dotted #444; padding-bottom: 1px; }
+    .field-label { font-weight: bold; text-transform: uppercase; font-size: 9px; white-space: nowrap; margin-right: 4px; }
+    .field-value { font-size: 10px; word-break: break-all; }
+    .section-title { font-weight: bold; margin-top: 10px; margin-bottom: 4px; text-decoration: underline; text-transform: uppercase; font-size: 9px; }
+    .checkbox-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 8px; }
+    .check-row { display: flex; align-items: center; font-size: 9px; }
+    .square-box { width: 11px; height: 11px; border: 1px solid #000; margin-right: 5px; text-align: center; line-height: 10px; font-weight: bold; font-size: 10px; background: #fff; }
+    .stamp-area { margin-top: 20px; float: right; border: 2px solid #1a365d; color: #1a365d; padding: 6px; font-weight: bold; font-size: 8px; text-align: center; width: 130px; transform: rotate(-3deg); text-transform: uppercase; }
+    .footer-dates { margin-top: 20px; font-size: 9px; float: left; line-height: 1.4; }
+</style>
+</head>
+<body>
+<div class="dual-page">
+    {% for i in [1, 2] %}
+    <div class="half-form">
+        <table class="header-table">
+            <tr>
+                <td style="width: 65%;">
+                    <strong>UNITATEA MEDICALĂ:</strong> {{ d.unitate_medicala.value }}<br>
+                    <strong>ADRESĂ:</strong> {{ d.adresa_unitate_medicala.value }}<br>
+                    <strong>TEL:</strong> {{ d.telefon_unitate_medicala.value }}
+                </td>
+                <td style="width: 35%; text-align: right;">
+                    <div style="border: 1px solid #000; padding: 3px; font-size: 7px; text-align: center; font-weight: bold; background: #fafafa;">
+                        S.C. ANIMA SPECIALITY MEDICAL SERVICES S.R.L.<br>DEPARTAMENT MEDICINA MUNCII
+                    </div>
+                </td>
+            </tr>
+        </table>
+        
+        <div class="doc-title">MEDICINA MUNCII - FIȘĂ DE APTITUDINE NR. {{ d.numar_fisa.value }}</div>
+        
+        <div class="field-row"><span class="field-label">Societate, unitate, etc.:</span><span class="field-value">{{ d.societate_unitate.value }}</span></div>
+        <div class="field-row"><span class="field-label">Adresă angajator:</span><span class="field-value">{{ d.adresa_angajator.value }}</span></div>
+        <div class="field-row"><span class="field-label">Telefon angajator:</span><span class="field-value">{{ d.telefon_angajator.value }}</span></div>
+        <div class="field-row"><span class="field-label">NUME:</span><span class="field-value">{{ d.nume.value }}</span></div>
+        <div class="field-row"><span class="field-label">PRENUME:</span><span class="field-value">{{ d.prenume.value }}</span></div>
+        <div class="field-row"><span class="field-label">CNP:</span><span class="field-value">{{ d.cnp.value }}</span></div>
+        <div class="field-row"><span class="field-label">Profesie / funcție:</span><span class="field-value">{{ d.profesie_functie.value }}</span></div>
+        <div class="field-row"><span class="field-label">Locul de muncă:</span><span class="field-value">{{ d.loc_de_munca.value }}</span></div>
+
+        <div class="section-title">Tip solicitare examinare ({{ d.tip_control.value }}):</div>
+        <div class="checkbox-grid">
+            <div class="check-row"><div class="square-box">{% if d.control_angajare.value %}X{% endif %}</div> Angajare</div>
+            <div class="check-row"><div class="square-box">{% if d.control_periodic.value %}X{% endif %}</div> Periodic</div>
+            <div class="check-row"><div class="square-box">{% if d.control_adaptare.value %}X{% endif %}</div> Adaptare</div>
+            <div class="check-row"><div class="square-box">{% if d.control_reluare.value %}X{% endif %}</div> Reluare muncii</div>
+            <div class="check-row"><div class="square-box">{% if d.control_supraveghere.value %}X{% endif %}</div> Supraveghere</div>
+            <div class="check-row"><div class="square-box">{% if d.control_alte.value %}X{% endif %}</div> Alte</div>
+        </div>
+
+        <div class="section-title">AVIZ MEDICAL (Concluzie):</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 5px;">
+            <div class="check-row"><div class="square-box">{% if d.aviz_apt.value %}X{% endif %}</div> <strong>APT</strong></div>
+            <div class="check-row"><div class="square-box">{% if d.aviz_apt_conditionat.value %}X{% endif %}</div> <strong>APT CONDIȚIONAT</strong></div>
+            <div class="check-row"><div class="square-box">{% if d.aviz_inapt_temporar.value %}X{% endif %}</div> <strong>INAPT TEMPORAR</strong></div>
+            <div class="check-row"><div class="square-box">{% if d.aviz_inapt.value %}X{% endif %}</div> <strong>INAPT</strong></div>
+        </div>
+        <div style="font-size: 8px; color: #555; margin-bottom: 5px;">Cod global aviz detectat: {{ d.aviz_medical.value }}</div>
+
+        <div class="field-row" style="margin-top: 5px;"><span class="field-label">RECOMANDĂRI (unde este cazul):</span><span class="field-value">{{ d.recomandari.value }}</span></div>
+
+        <div class="footer-dates">
+            Data examinării: <strong>{{ d.display_data }}</strong><br>
+            Data următoarei examinări: <strong>{{ d.display_data_urm }}</strong>
+        </div>
+        
+        <div class="stamp-area">
+            Dr. MINDRU FLORINA<br>Medic Specialist<br>Medicina Muncii<br>Cod: D55830
+        </div>
+        <div style="clear: both;"></div>
+    </div>
+    {% endfor %}
+</div>
+</body>
+</html>
