@@ -1,0 +1,15 @@
+web/client/src/pages/devicesPage/index.tsx:interface Device {
+web/client/src/pages/devicesPage/index.tsx:interface DeviceActionState {
+web/client/src/pages/photosPage/index.tsx:interface Device {
+web/client/src/pages/photosPage/index.tsx:interface SearchParams {
+web/client/src/types/photo.ts:export interface ExtractedField<T> {
+web/client/src/types/photo.ts:export interface MedicalData {
+web/client/src/types/photo.ts:export interface Photo {
+web/client/src/contexts/AuthContextState.ts:export interface AuthContextType {
+web/client/src/contexts/AuthContextState.ts:export interface JwtPayload {
+web/client/src/components/photosCards/index.tsx:interface PhotoCardProps {
+web/client/src/components/navbar/index.tsx:interface ButtonProps {
+web/client/src/components/navbar/index.tsx:interface NavbarProps {
+web/client/src/components/devicesCards/index.tsx:interface DeviceCardProps {
+web/client/src/components/button/index.tsx:interface ButtonProps {
+web/client/src/components/ProtectedRoute.tsx:interface ProtectedRouteProps {

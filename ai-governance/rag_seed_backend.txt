@@ -1,0 +1,20 @@
+web/server/utils/aws.go:func UploadToS3(ctx context.Context, photo []byte, photoType string, keyName string) error {
+web/server/utils/aws.go:func GetPresignedURL(ctx context.Context, keyName string) (string, error) {
+web/server/utils/aws.go:	presignedURL, err := presigner.PresignGetObject(ctx, input, func(o *s3.PresignOptions) {
+web/server/utils/medical_parser.go:func IsMedicalCertificate(ocrText string) bool {
+web/server/utils/medical_parser.go:func ParseMedicalCertificate(ocrText string) *domain.MedicalData {
+web/server/utils/medical_parser.go:	data.ProfesieFunctie = extractStringField(cleanText, `(?i)Profesie\s*[\/\|]\s*functie[:;]?\s*(.*?)(?:\s+Rrofesle|\s+Locul|$)`, 0.9)
+web/server/utils/medical_parser.go:func normalizeOCRText(text string) string {
+web/server/utils/medical_parser.go:// extractFieldRaw extrage strict string-ul pentru a fi procesat de alte functii (ex. date)
+web/server/utils/medical_parser.go:func extractFieldRaw(text, pattern string) string {
+web/server/utils/medical_parser.go:func extractStringField(text, pattern string, baseConfidence float64) domain.ExtractedField[string] {
+web/server/utils/medical_parser.go:func detectCheckbox(text, labelPattern string) domain.ExtractedField[bool] {
+web/server/utils/medical_parser.go:func parseDateStr(dateStr string) domain.ExtractedField[time.Time] {
+web/server/utils/medical_parser.go:func deduceMainControl(data *domain.MedicalData) domain.ExtractedField[string] {
+web/server/utils/medical_parser.go:func deduceAvizMedical(data *domain.MedicalData) domain.ExtractedField[string] {
+web/server/utils/storage.go:func SaveToLocal(data []byte, keyName string) error {
+web/server/utils/storage.go:func GetLocalURL(keyName string) string {
+web/server/utils/auth.go:func VerifyToken(tokenString string) (*Claims, error) {
+web/server/utils/auth.go:	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
+web/server/utils/auth.go:func GenerateToken(email, role string) (string, error) {
+web/server/utils/auth.go:func CheckPassword(hashedPassword, password string) error {

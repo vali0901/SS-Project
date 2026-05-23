@@ -1,0 +1,37 @@
+# SECURE ARCHITECTURE BLUEPRINT - SCHOOL PROJECT PoC
+
+## 1. PROJECT OVERVIEW & TOPOLOGY
+This project is a secure medical imaging and data management system.
+- **Backend (web/server):** Go-based API using the Gin framework. It serves as the central data orchestrator.
+- **Frontend (web/client):** React/TypeScript application providing the user interface for data visualization.
+- **Mobile (mobile/app):** Android/Kotlin application for field-based data entry and image capture.
+- **Broker (web/broker):** Mosquitto MQTT broker for real-time messaging, secured via TLS.
+
+## 2. CORE SECURITY REQUIREMENTS
+- **Mutual TLS (mTLS):** All communication between Client (Web/Mobile) and Server MUST be encrypted and authenticated using certificates located in `web/secrets/`.
+- **Zero Trust Principles:** No service is trusted by default. Every request must present a valid certificate.
+- **RBAC (Role-Based Access Control):** Enforced at the Gateway level. AI agents are restricted to 'Developer' roles and cannot touch 'Admin' zones.
+
+## 3. SECURITY ZONES & RBAC (PLAN 2 ENFORCEMENT)
+- **ZONE_RED (PROTECTED):** 
+    - `web/secrets/` (CA, Server, Client keys/certs).
+    - `ai-governance/audit.log` (Immutable evidence).
+    - `.env` files (Secret configurations).
+    - *RULE: Write Access DENIED. Read Access HEAVILY AUDITED.*
+- **ZONE_YELLOW (MONITORED):** 
+    - `web/server/routes/`, `web/server/repository/` (Business Logic).
+    - `web/client/src/` (UI Logic).
+    - *RULE: Write Access PROPOSED via Quarantine Branch. Manual Review Required.*
+- **ZONE_BLUE (PUBLIC):** 
+    - `README.md`, `ai-governance/` (excluding log).
+    - *RULE: Standard Developer Access.*
+
+## 4. AUDIT & PROVENANCE (PLAN 5)
+- **Immutable Audit:** Every tool call by an AI agent is logged with a timestamp and rationale.
+- **SBOM (Software Bill of Materials):** All dependencies must be tracked. Any addition of new libraries must be audited for vulnerabilities.
+- **SARIF Reports:** All security scans must export results in the SARIF format for centralized viewing.
+
+## 5. FORBIDDEN AI PATTERNS
+- **NO Hardcoded Secrets:** Never propose code with API keys or hardcoded tokens.
+- **NO Certificate Modification:** AI agents MUST NOT attempt to regenerate or modify files in `web/secrets/`.
+- **NO Pipeline Bypassing:** AI changes must always be staged in `quarantine/` branches.

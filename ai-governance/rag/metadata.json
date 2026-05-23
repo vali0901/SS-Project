@@ -1,0 +1,35 @@
+{
+    "project_name": "SS-Project (Secure Medical Imaging)",
+    "topology": {
+        "backend": {
+            "path": "web/server",
+            "tech_stack": "Go / Gin",
+            "responsibilities": "Data orchestration, mTLS termination, medical record parsing",
+            "key_files": ["main.go", "routes/init.go", "utils/auth.go"]
+        },
+        "frontend": {
+            "path": "web/client",
+            "tech_stack": "React / TypeScript / Vite",
+            "responsibilities": "UI for medical data visualization, patient registration",
+            "key_files": ["src/App.tsx", "src/main.tsx", "src/components/navbar/index.tsx"]
+        },
+        "mobile": {
+            "path": "mobile/app",
+            "tech_stack": "Android / Kotlin",
+            "responsibilities": "Mobile image capture, field data entry",
+            "key_files": ["src/main/java/ro/pub/", "build.gradle.kts"]
+        },
+        "broker": {
+            "path": "web/broker",
+            "tech_stack": "Mosquitto MQTT",
+            "responsibilities": "Real-time messaging backend",
+            "key_files": ["mosquitto.conf"]
+        },
+        "governance": {
+            "path": "ai-governance",
+            "tech_stack": "Python / CrewAI",
+            "responsibilities": "AI Orchestration, RAG, Audit logs",
+            "key_files": ["ai_orchestrator.py", "audit.log"]
+        }
+    }
+}

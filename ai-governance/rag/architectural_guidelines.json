@@ -1,0 +1,18 @@
+{
+    "backend_standards": {
+        "language": "Go 1.24+",
+        "error_handling": "Always check errors; no panic() in production code.",
+        "concurrency": "Prefer channels over shared mutexes.",
+        "logging": "JSON structured logs for ingestion into monitoring."
+    },
+    "frontend_standards": {
+        "language": "TypeScript / React",
+        "styling": "Prefer Vanilla CSS or Tailwind (if already used).",
+        "components": "Functional components with Hooks. Strict typing for Props."
+    },
+    "governance_standards": {
+        "quarantine": "All AI patches must go to 'quarantine/' branch prefix.",
+        "audit": "Every tool call must have a rationale and timestamp.",
+        "rag": "Agents must query the RAG before starting complex tasks."
+    }
+}
