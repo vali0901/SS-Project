@@ -23,7 +23,7 @@ jobs:
           cache-dependency-path: go.sum
 
       - name: Download dependencies
-        working-directory: ./server
+        working-directory: ./web/server
         run: go mod download
 
       - name: Install Tesseract OCR
@@ -38,7 +38,7 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Generate Mocks
-        working-directory: ./server
+        working-directory: ./web/server
         run: |
           mkdir -p mocks
 
@@ -57,7 +57,7 @@ jobs:
             -destination=mocks/device_mock.go \
             mqtt-streaming-server/domain DeviceRepository
       - name: Run Tests and Coverage
-        working-directory: ./server
+        working-directory: ./web/server
         run: |
           go test -covermode=atomic -coverprofile=coverage.out ./...
           grep -v 'mocks/' coverage.out > coverage_clean.out
