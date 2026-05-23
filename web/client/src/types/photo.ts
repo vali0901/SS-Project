@@ -40,9 +40,19 @@ export interface Photo {
   id: string;
   timestamp: string;
   image_type: string;
+  processing_latency_ms: number;
+  ocr_success: boolean;
   presigned_url: string;
   device_id: string;
   user_email: string;
   text: string;
   medical_data: MedicalData;
+}
+
+export interface PerformanceMetrics {
+  total_documents: number;
+  ocr_success_count: number;
+  ocr_success_rate: number;
+  average_latency_ms: number;
+  p95_latency_ms: number;
 }

@@ -61,11 +61,16 @@ def generate_random_photo():
     tel_clinic = f"+40 21 {random.randint(400, 409)} {random.randint(10, 99)} {random.randint(10, 99)}"
     tel_company = f"07{random.randint(22, 76)}{random.randint(100, 999)}{random.randint(100, 999)}"
 
+    ocr_success = random.random() < 0.95
+    processing_latency_ms = random.randint(120, 1800)
+
     meta = {
         "timestamp": timestamp,
         "image_type": "jpeg",
         "device_id": f"device-{random.randint(1, 5)}",
-        "ocr_text": f"Fake OCR for {nume} {prenume}"
+        "ocr_text": f"Fake OCR for {nume} {prenume}" if ocr_success else "OCR failed",
+        "ocr_success": ocr_success,
+        "processing_latency_ms": processing_latency_ms,
     }
 
     # 5. Populate Complete Structured Model Map Matching every Go Struct Parameter
@@ -167,8 +172,8 @@ def insert_db(id, meta, medical_data):
                     
                 # Prepare SQL Insert Statement
                 query = """
-                    INSERT INTO photos (id, timestamp, image_type, device_id, user_email, text, medical_data)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s);
+                    INSERT INTO photos (id, timestamp, image_type, processing_latency_ms, ocr_success, device_id, user_email, text, medical_data)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
                 """
                 
                 # Execute with values. psycopg automatically converts dict to JSONB string
@@ -176,6 +181,8 @@ def insert_db(id, meta, medical_data):
                     id,
                     meta["timestamp"],
                     meta["image_type"],
+                    meta["processing_latency_ms"],
+                    meta["ocr_success"],
                     meta["device_id"],
                     "test@mail.com",
                     meta["ocr_text"],
@@ -198,12 +205,22 @@ def main():
     parser = argparse.ArgumentParser(description="Generate comprehensive dataset matching Go structs completely.")
     parser.add_argument("--insert-db", action="store_true", help="also insert into db")
     parser.add_argument("--count", type=int, default=5, help="Number of data iterations.")
+    parser.add_argument("--ocr-success-rate", type=float, default=0.9, help="Probability [0.0-1.0] that OCR succeeds.")
+    parser.add_argument("--latency-min-ms", type=int, default=120, help="Minimum processing latency in ms.")
+    parser.add_argument("--latency-max-ms", type=int, default=1800, help="Maximum processing latency in ms.")
     parser.add_argument(
         "--obs_portrait",
         action="store_true",
         help="Render generated JPEGs directly at 1080x1920 for OBS virtual camera input."
     )
     args = parser.parse_args()
+
+    # Keep bounds sane and deterministic for test data generation.
+    args.ocr_success_rate = max(0.0, min(1.0, args.ocr_success_rate))
+    if args.latency_min_ms < 0:
+        args.latency_min_ms = 0
+    if args.latency_max_ms < args.latency_min_ms:
+        args.latency_max_ms = args.latency_min_ms
 
     os.makedirs(PHOTO_DIR, exist_ok=True)
     os.makedirs(VALIDATION_DIR, exist_ok=True)
@@ -219,6 +236,10 @@ def main():
         
         for idx in range(1, args.count + 1):
             meta, record_data = generate_random_photo()
+            meta["ocr_success"] = random.random() < args.ocr_success_rate
+            meta["processing_latency_ms"] = random.randint(args.latency_min_ms, args.latency_max_ms)
+            if not meta["ocr_success"]:
+                meta["ocr_text"] = "OCR failed"
             selected_layout = random.choice(layouts)
             selected_font = random.choice(fonts)
             

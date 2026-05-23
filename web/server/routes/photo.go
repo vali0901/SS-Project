@@ -44,6 +44,7 @@ func InitPhotoRoutes(db *gorm.DB, ocrClient *gosseract.Client, mux *http.ServeMu
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})))
+	mux.Handle("/photos/performance", withAuth(http.HandlerFunc(photoController.GetPerformanceMetrics)))
 	mux.Handle("/photos/anonymized/export", withAuth(http.HandlerFunc(photoController.DownloadAnonymizedDataset)))
 	mux.Handle("/photos/all", withAuth(http.HandlerFunc(photoController.DeleteAllPhotos)))
 	mux.Handle("/photos/", withAuth(http.HandlerFunc(photoController.HandlePhotoByID)))
@@ -120,6 +121,7 @@ func (ctlr PhotoController) GetPhotos(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ctlr PhotoController) UploadPhoto(w http.ResponseWriter, r *http.Request) {
+	startProcessing := time.Now().UTC()
 	ctx := r.Context()
 	userEmail, _ := ctx.Value("email").(string)
 
@@ -158,11 +160,13 @@ func (ctlr PhotoController) UploadPhoto(w http.ResponseWriter, r *http.Request) 
 
 	// OCR Extraction
 	text := "OCR skipped"
+	ocrSuccess := false
 	if ctlr.ocrClient != nil {
 		ctlr.ocrClient.SetImageFromBytes(fileBytes)
 		extracted, err := ctlr.ocrClient.Text()
 		if err == nil {
 			text = extracted
+			ocrSuccess = strings.TrimSpace(extracted) != ""
 		}
 	}
 
@@ -180,12 +184,14 @@ func (ctlr PhotoController) UploadPhoto(w http.ResponseWriter, r *http.Request) 
 
 	// Create photo object
 	photo := &domain.Photo{
-		ID:        uuid.New().String(),
-		Timestamp: timestamp,
-		ImageType: imageType,
-		DeviceID:  deviceID,
-		UserEmail: userEmail,
-		Text:      text,
+		ID:                  uuid.New().String(),
+		Timestamp:           timestamp,
+		ImageType:           imageType,
+		ProcessingLatencyMs: time.Since(startProcessing).Milliseconds(),
+		OCRSuccess:          ocrSuccess,
+		DeviceID:            deviceID,
+		UserEmail:           userEmail,
+		Text:                text,
 	}
 
 	if medicalData != nil {

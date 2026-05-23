@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContextState';
 import { apiFetch } from '../../utils/api';
-import type { Photo } from '../../types/photo';
+import type { Photo, PerformanceMetrics } from '../../types/photo';
 import {
     BarChart,
     Bar,
@@ -22,6 +22,7 @@ const StatisticsPage: React.FC = () => {
     const [downloading, setDownloading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [photos, setPhotos] = useState<Photo[]>([]);
+    const [performance, setPerformance] = useState<PerformanceMetrics | null>(null);
 
     const [controlChartType, setControlChartType] = useState<'bar' | 'pie'>('bar');
     const [avizChartType, setAvizChartType] = useState<'bar' | 'pie'>('pie');
@@ -47,13 +48,19 @@ const StatisticsPage: React.FC = () => {
             queryParams.append('end', endTimestamp.toString());
 
             const response = await apiFetch(`/photos?${queryParams.toString()}`);
+            const performanceResponse = await apiFetch(`/photos/performance?${queryParams.toString()}`);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch data');
             }
+            if (!performanceResponse.ok) {
+                throw new Error('Failed to fetch performance data');
+            }
 
             const data = await response.json();
+            const performanceData = await performanceResponse.json();
             setPhotos(Array.isArray(data) ? data : []);
+            setPerformance(performanceData);
         } catch (err) {
             console.error('Error fetching stats data:', err);
             setError('Failed to load statistics data');
@@ -292,6 +299,34 @@ const StatisticsPage: React.FC = () => {
                             <span className="block text-2xl font-bold text-orange-900">
                                 {controlData.find(d => d.name === 'Periodic')?.value || 0}
                             </span>
+                        </div>
+                    </div>
+
+                    {/* Performance Metrics */}
+                    <div className="col-span-1 md:col-span-2 bg-white p-6 rounded-lg shadow-md border border-slate-200">
+                        <h3 className="text-lg font-medium text-gray-800 mb-4">System Performance</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                <span className="block text-sm text-slate-600 font-medium">OCR Success Rate</span>
+                                <span className="block text-2xl font-bold text-slate-900">
+                                    {(performance?.ocr_success_rate ?? 0).toFixed(2)}%
+                                </span>
+                                <span className="block text-xs text-slate-500 mt-1">
+                                    {performance?.ocr_success_count ?? 0} / {performance?.total_documents ?? 0} successful
+                                </span>
+                            </div>
+                            <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+                                <span className="block text-sm text-indigo-700 font-medium">Avg Processing Latency</span>
+                                <span className="block text-2xl font-bold text-indigo-900">
+                                    {(performance?.average_latency_ms ?? 0).toFixed(0)} ms
+                                </span>
+                            </div>
+                            <div className="bg-cyan-50 p-4 rounded-lg border border-cyan-100">
+                                <span className="block text-sm text-cyan-700 font-medium">P95 Processing Latency</span>
+                                <span className="block text-2xl font-bold text-cyan-900">
+                                    {performance?.p95_latency_ms ?? 0} ms
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>

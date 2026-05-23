@@ -8,6 +8,7 @@ import (
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
+	"strings"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -86,6 +87,7 @@ func (b BrokerHandler) HandleLogin(client mqtt.Client, msg mqtt.Message) {
 }
 
 func (b BrokerHandler) HandlePhoto(_ mqtt.Client, msg mqtt.Message) {
+	startProcessing := time.Now().UTC()
 	topic := msg.Topic()
 	var deviceID string
 	// topic is ssproject/images/device_id or just ssproject/images
@@ -127,6 +129,7 @@ func (b BrokerHandler) HandlePhoto(_ mqtt.Client, msg mqtt.Message) {
 
 	// Extract text from image
 	text, err := b.extractTextFromImage(body)
+	ocrSuccess := err == nil && strings.TrimSpace(text) != ""
 	if err != nil {
 		fmt.Printf("Failed to extract text from image: %v\n", err)
 		text = "OCR failed"
@@ -146,12 +149,14 @@ func (b BrokerHandler) HandlePhoto(_ mqtt.Client, msg mqtt.Message) {
 
 	// Create photo with embedded medical data
 	photo := &domain.Photo{
-		ID:        uuid.New().String(),
-		ImageType: imageType,
-		Timestamp: timestamp,
-		DeviceID:  deviceID,
-		UserEmail: device.UserEmail,
-		Text:      text,
+		ID:                  uuid.New().String(),
+		ImageType:           imageType,
+		Timestamp:           timestamp,
+		ProcessingLatencyMs: time.Since(startProcessing).Milliseconds(),
+		OCRSuccess:          ocrSuccess,
+		DeviceID:            deviceID,
+		UserEmail:           device.UserEmail,
+		Text:                text,
 	}
 
 	// Copy medical data fields directly to photo
