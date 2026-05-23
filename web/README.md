@@ -27,11 +27,11 @@ ss-web/
 |-----------|------------|
 | Frontend | React + TypeScript + Vite + TailwindCSS |
 | Backend | Go (Golang) |
-| Bază de date | MongoDB |
+| Bază de date | PostgreSQL |
 | Broker MQTT | Eclipse Mosquitto |
 | Containerizare | Docker Compose |
-| Autentificare | JWT - TODO: de implementat (vezi `docs/AUTH_IMPLEMENTATION.md`) |
-| Securitate | mTLS (Mutual TLS) - TODO: de implementat |
+| Autentificare | JWT pentru API și înregistrarea dispozitivelor |
+| Securitate | MQTT peste mTLS (Mutual TLS) pe portul 8883 |
 
 ---
 
@@ -61,8 +61,9 @@ Verifică/creează fișierul `.env` în directorul rădăcină:
 # .env
 UID=501                               # User ID local (obține cu `id -u`)
 GID=20                                # Group ID local (obține cu `id -g`)
-MONGO_INITDB_ROOT_USERNAME=admin      # Username MongoDB
-MONGO_INITDB_ROOT_PASSWORD=supersecret # Parolă MongoDB
+POSTGRES_USER=admin                   # Username PostgreSQL
+POSTGRES_PASSWORD=supersecret         # Parolă PostgreSQL
+POSTGRES_DB=ssproject                 # Bază de date PostgreSQL
 JWT_SECRET=dev-secret                 # Secret pentru JWT
 MQTT_HOST_IP=192.168.1.95             # IP-ul host-ului pentru MQTT
 ```
@@ -77,7 +78,7 @@ MQTT_HOST_IP=192.168.1.95             # IP-ul host-ului pentru MQTT
 
 Acest script va:
 1. Instala dependențele client (yarn install)
-2. Porni containerele Docker (API, MongoDB, MQTT Broker)
+2. Porni containerele Docker (API, PostgreSQL, MQTT Broker)
 3. Porni serverul de development Vite
 
 **Metoda 2: Manual**
@@ -100,9 +101,8 @@ După pornire, aplicația va fi disponibilă la:
 |----------|----------|
 | Frontend (Vite) | http://localhost:5173 |
 | Backend API | http://localhost:8080 |
-| MongoDB | localhost:27019 |
+| PostgreSQL | localhost:5432 |
 | MQTT Broker (mTLS) | localhost:8883 |
-| MQTT Broker (plain) | localhost:1883 |
 
 ---
 
@@ -166,7 +166,7 @@ docker compose down
 docker ps
 docker logs go-api
 docker logs broker
-docker logs mongo-db
+docker logs postgres-db
 ```
 
 ### Verificare conectivitate MQTT
@@ -308,25 +308,43 @@ ipconfig getifaddr en1
 
 ### Configurare în aplicația mobilă:
 
-În aplicația mobilă Android/iOS, setează:
+În aplicația mobilă Android, setează:
 
 | Parametru | Valoare |
 |-----------|---------|
-| **MQTT Host** | IP-ul din `.env` (ex: `192.168.1.95`) |
+| **MQTT Host pe emulator** | `10.0.2.2` |
+| **MQTT Host pe telefon fizic** | IP-ul din `.env` (ex: `192.168.1.95`) |
 | **MQTT Port (mTLS)** | `8883` |
-| **MQTT Port (plain)** | `1883` |
+| **mTLS** | activat |
+| **Email/Password** | credențiale valide din aplicația web |
 | **Topic pentru imagini** | `ssproject/images/{DEVICE_ID}` |
 | **Topic pentru înregistrare** | `register/{DEVICE_ID}` |
 
+Aplicația mobilă cere și credențiale de utilizator. La conectare face `POST http://{MQTT Host}:8080/login`, primește tokenul JWT, apoi îl trimite în payload-ul MQTT de înregistrare a dispozitivului. Fără acest token, serverul respinge încărcarea imaginilor de la dispozitive neautentificate.
+
+Pentru emulatorul Android, `10.0.2.2` este adresa specială care indică spre mașina host. De aceea aceeași valoare este folosită atât pentru login HTTP (`http://10.0.2.2:8080/login`), cât și pentru MQTT mTLS (`10.0.2.2:8883`).
+
 ### Certificate necesare pentru mTLS:
 
-> **Notă:** Securitatea mTLS nu este implementată implicit. Pentru a activa conexiunea securizată:
-> 1. Urmați ghidul din [`docs/SECURITY_IMPLEMENTATION.md`](docs/SECURITY_IMPLEMENTATION.md)
-> 2. Generați certificatele necesare în directorul `secrets/`
+Brokerul Mosquitto rulează pe portul `8883` cu `require_certificate true`, iar serverul Go și scripturile Python folosesc certificate client semnate de aceeași CA. Certificatele se generează cu:
+
+```bash
+./scripts/gen-ca.sh
+bash ./scripts/gen-android-stores.sh
+```
 
 Pentru conexiunea securizată, aplicația mobilă are nevoie de:
-- `ca.crt` - Certificate Authority
-- Certificat client generat de aceeași CA
+- `mobile/app/src/main/res/raw/ca.crt` - CA-ul folosit pentru verificarea brokerului
+- `mobile/app/src/main/res/raw/mtls_keystore.p12` - certificatul și cheia clientului Android
+
+Fișierele folosite local de Docker sunt în `secrets/`: `ca.crt`, `server.crt`, `server.key`, `web.crt`, `web.key`.
+
+După regenerarea certificatelor, reconstruiește și reinstalează aplicația Android. APK-ul instalat anterior păstrează resursele vechi, deci o simplă repornire a aplicației nu este suficientă.
+
+```bash
+cd ../mobile
+./gradlew installDebug
+```
 
 ---
 

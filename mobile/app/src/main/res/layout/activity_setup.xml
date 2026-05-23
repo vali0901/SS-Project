@@ -46,6 +46,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:digits="@string/setup_ip_digits"
+                    android:text="@string/setup_default_emulator_ip"
                     android:singleLine="true" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -62,6 +63,7 @@
                     android:layout_height="wrap_content"
                     android:digits="@string/setup_port_digits"
                     android:inputType="phone"
+                    android:text="@string/setup_default_tls_port"
                     android:singleLine="true" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -73,7 +75,38 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="8dp"
                 android:text="Conexiune securizată (mTLS)"
-                android:checked="false" />
+                android:checked="true" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/setup_card_view_email_field_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/setup_hint_email">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/setup_card_view_email_field"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textEmailAddress"
+                    android:singleLine="true" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/setup_card_view_password_field_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/setup_hint_password"
+                app:passwordToggleEnabled="true">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/setup_card_view_password_field"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword"
+                    android:singleLine="true" />
+
+            </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/setup_card_view_connect_btn"
