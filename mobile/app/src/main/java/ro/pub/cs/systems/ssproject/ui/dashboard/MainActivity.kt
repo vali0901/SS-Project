@@ -91,8 +91,8 @@ class MainActivity : AppCompatActivity() {
         val sslSocketFactory = if (useTls) {
             TlsHelper.createMtlsSocketFactory(
                 context = this,
-                trustStoreResId = R.raw.truststore,
-                keyStoreResId = R.raw.keystore
+                trustStoreResId = R.raw.ca,
+                keyStoreResId = R.raw.mtls_keystore
             )
         } else {
             null
@@ -101,6 +101,7 @@ class MainActivity : AppCompatActivity() {
         mqttHandler = MqttHandler(
             brokerIp,
             brokerPort,
+            authToken = intent.getStringExtra("authToken")!!,
             sslSocketFactory = sslSocketFactory,
             isConnectedCallback = { isConnected ->
                 runOnUiThread {

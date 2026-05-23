@@ -1,6 +1,8 @@
 package ro.pub.cs.systems.ssproject.mqtt
  
 import android.content.Context
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import java.security.KeyStore
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
@@ -13,8 +15,8 @@ object TlsHelper {
      * Creează un SSLSocketFactory configurat pentru mTLS.
      *
      * @param context Contextul Android (necesar pentru accesarea resurselor raw)
-     * @param trustStoreResId ID-ul resursei raw pentru truststore (R.raw.truststore)
-     * @param keyStoreResId ID-ul resursei raw pentru keystore (R.raw.keystore)
+     * @param trustStoreResId ID-ul resursei raw pentru CA PEM (R.raw.ca)
+     * @param keyStoreResId ID-ul resursei raw pentru keystore (R.raw.mtls_keystore)
      * @return SSLSocketFactory configurat cu certificatele client și CA
      */
     fun createMtlsSocketFactory(
@@ -22,10 +24,15 @@ object TlsHelper {
         trustStoreResId: Int,
         keyStoreResId: Int
     ): SSLSocketFactory {
-        // 1. Încărcarea TrustStore-ului (conține certificatul CA)
-        val trustStore = KeyStore.getInstance(MqttConstants.BKS_STORE_TYPE)
-        context.resources.openRawResource(trustStoreResId).use { input ->
-            trustStore.load(input, MqttConstants.TRUSTSTORE_PASSWORD.toCharArray())
+        // 1. Încărcarea CA-ului și construirea unui truststore Android valid.
+        val certificateFactory = CertificateFactory.getInstance("X.509")
+        val caCertificate = context.resources.openRawResource(trustStoreResId).use { input ->
+            certificateFactory.generateCertificate(input) as X509Certificate
+        }
+
+        val trustStore = KeyStore.getInstance(KeyStore.getDefaultType()).apply {
+            load(null, null)
+            setCertificateEntry("ssproject-ca", caCertificate)
         }
  
         val trustManagerFactory = TrustManagerFactory.getInstance(
@@ -34,7 +41,7 @@ object TlsHelper {
         trustManagerFactory.init(trustStore)
  
         // 2. Încărcarea KeyStore-ului (conține certificatul și cheia clientului)
-        val keyStore = KeyStore.getInstance(MqttConstants.BKS_STORE_TYPE)
+        val keyStore = KeyStore.getInstance(MqttConstants.KEY_STORE_TYPE)
         context.resources.openRawResource(keyStoreResId).use { input ->
             keyStore.load(input, MqttConstants.KEYSTORE_PASSWORD.toCharArray())
         }

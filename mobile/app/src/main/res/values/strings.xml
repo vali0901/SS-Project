@@ -5,8 +5,12 @@
     <string name="setup_title">MQTT Server Setup</string>
     <string name="setup_hint_ip">IP</string>
     <string name="setup_hint_port">Port</string>
+    <string name="setup_hint_email">Email</string>
+    <string name="setup_hint_password">Password</string>
     <string name="setup_ip_digits">1234567890.</string>
     <string name="setup_port_digits">1234567890</string>
+    <string name="setup_default_emulator_ip">10.0.2.2</string>
+    <string name="setup_default_tls_port">8883</string>
     <string name="setup_connect_btn">Connect</string>
 
     <!-- Main Activity string declarations -->

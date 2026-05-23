@@ -14,16 +14,21 @@ import socket
 import json
 import paho.mqtt.client as mqtt
 import sys
+import ssl
 import argparse
+import requests
 from pathlib import Path
 
 # Configuration
 BROKER = "127.0.0.1"
 PORT = 8883  
+API_URL = "http://127.0.0.1:8080"
 
 # Default device info
 DEFAULT_DEVICE_ID = "folder-uploader"
 DEFAULT_DEVICE_NAME = "Folder Batch Upload"
+DEFAULT_EMAIL = "test@mail.com"
+DEFAULT_PASSWORD = "test"
 
 # Supported image extensions
 SUPPORTED_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG'}
@@ -37,16 +42,39 @@ CA_CRT = os.path.join(SECRETS_DIR, "ca.crt")
 CLIENT_CRT = os.path.join(SECRETS_DIR, "web.crt")
 CLIENT_KEY = os.path.join(SECRETS_DIR, "web.key")
 
+def get_token_from_api(email, password):
+    """Log in to the API and get a JWT token used for MQTT device registration."""
+    try:
+        print(f"Autentificare API la {API_URL} ca {email}...")
+        response = requests.post(
+            f"{API_URL}/login",
+            json={"email": email, "password": password},
+            timeout=10
+        )
+        if response.status_code == 200:
+            token = response.json().get("token")
+            print("Token JWT obtinut.")
+            return token
+
+        print(f"Autentificare esuata ({response.status_code}): {response.text}")
+        return None
+    except Exception as e:
+        print(f"Eroare la autentificare: {e}")
+        return None
+
+
 class ImageUploader:
-    def __init__(self, device_id, device_name):
+    def __init__(self, device_id, device_name, token):
         self.device_id = device_id
         self.device_name = device_name
+        self.token = token
         self.register_topic = f"register/{device_id}"
-        self.photo_topic = f"photos/{device_id}"
+        self.photo_topic = f"ssproject/images/{device_id}"
         self.images_to_send = []
         self.current_index = 0
         self.connected = False
         self.registered = False
+        self.registration_mid = None
         
     def get_local_ip(self):
         """Get the local IP address of this machine"""
@@ -69,21 +97,26 @@ class ImageUploader:
             registration = json.dumps({
                 "name": self.device_name,
                 "ip": local_ip,
-                "port": str(PORT)
+                "port": str(PORT),
+                "token": self.token
             })
             print(f"✓ Înregistrare dispozitiv: {self.device_id}")
-            client.publish(self.register_topic, registration)
-            time.sleep(0.5)
-            self.registered = True
-            
-            # Start sending images
-            self.send_next_image(client)
+            result = client.publish(self.register_topic, registration)
+            self.registration_mid = result.mid
         else:
             print(f"✗ Eroare conexiune, cod: {rc}")
             sys.exit(1)
     
     def on_publish(self, client, userdata, mid):
-        # Send next image after current one is published
+        if mid == self.registration_mid:
+            self.registered = True
+            self.send_next_image(client)
+            return
+
+        if not self.registered:
+            return
+
+        # Send next image after current one is published.
         time.sleep(0.3)  # Small delay between images
         self.send_next_image(client)
     
@@ -98,9 +131,9 @@ class ImageUploader:
             with open(image_path, 'rb') as f:
                 image_data = f.read()
             
-            client.publish(self.photo_topic, image_data)
             print(f"  [{self.current_index + 1}/{len(self.images_to_send)}] Trimis: {os.path.basename(image_path)}")
             self.current_index += 1
+            client.publish(self.photo_topic, image_data)
             
         except Exception as e:
             print(f"✗ Eroare la citirea imaginii {image_path}: {e}")
@@ -144,7 +177,6 @@ class ImageUploader:
         
         client.tls_set(ca_certs=CA_CRT, certfile=CLIENT_CRT, keyfile=CLIENT_KEY, 
                       tls_version=ssl.PROTOCOL_TLSv1_2)
-        client.tls_insecure_set(True)
         
         try:
             client.connect(BROKER, PORT, 60)
@@ -182,10 +214,24 @@ Exemple de utilizare:
     parser.add_argument('--device-name',
                        default=DEFAULT_DEVICE_NAME,
                        help=f'Numele dispozitivului (default: {DEFAULT_DEVICE_NAME})')
+    parser.add_argument('--token',
+                       default=os.environ.get("MQTT_TOKEN"),
+                       help='Token JWT pentru inregistrarea dispozitivului (implicit: MQTT_TOKEN)')
+    parser.add_argument('--email',
+                       default=DEFAULT_EMAIL,
+                       help=f'Email pentru login API (default: {DEFAULT_EMAIL})')
+    parser.add_argument('--password',
+                       default=DEFAULT_PASSWORD,
+                       help=f'Parola pentru login API (default: {DEFAULT_PASSWORD})')
     
     args = parser.parse_args()
-    
-    uploader = ImageUploader(args.device_id, args.device_name)
+
+    token = args.token or get_token_from_api(args.email, args.password)
+    if not token:
+        print("Nu exista token JWT. Incarcarea a fost oprita.")
+        sys.exit(1)
+
+    uploader = ImageUploader(args.device_id, args.device_name, token)
     uploader.upload_folder(args.folder)
 
 if __name__ == "__main__":
