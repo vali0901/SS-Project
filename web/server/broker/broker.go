@@ -166,7 +166,7 @@ func (b BrokerHandler) HandlePhoto(_ mqtt.Client, msg mqtt.Message) {
 		return
 	}
 	// Save photo locally
-	keyName := fmt.Sprintf("photos/%d.%s", timestamp.Unix(), imageType)
+	keyName := utils.PhotoStorageKey(photo.ID)
 	if err := utils.SaveToLocal(body, keyName); err != nil {
 		fmt.Printf("Failed to save photo locally: %v\n", err)
 		return

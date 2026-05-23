@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    body { font-family: '{{ font }}', sans-serif; padding: 35px; font-size: 11px; color: #333; background: #fff; }
+    .form-title { font-size: 15px; font-weight: bold; border-bottom: 2px solid #333; padding-bottom: 4px; text-transform: uppercase; margin-bottom: 15px; }
+    .block-header { background: #E6EEF4; border: 1px solid #A0A0A0; font-weight: bold; padding: 5px 8px; font-size: 10px; text-transform: uppercase; margin-top: 15px; }
+    table { width: 100%; border-collapse: collapse; margin-top: -1px; }
+    td { border: 1px solid #A0A0A0; padding: 6px; text-align: left; vertical-align: top; }
+    .box-list { display: flex; flex-wrap: wrap; gap: 10px; padding: 5px 0; }
+    .box-item { display: flex; align-items: center; width: 30%; font-size: 10px; }
+    .indicator { width: 12px; height: 12px; border: 1px solid #333; margin-right: 6px; text-align: center; line-height: 11px; font-weight: bold; }
+</style>
+</head>
+<body>
+    <div class="form-title">📋 FORMULAR COMPLET FIȘĂ ȘI ISTORIC CLINIC</div>
+    
+    <div class="block-header">1. Informații Unitate Medicală Emitentă</div>
+    <table>
+        <tr>
+            <td style="width: 40%;"><strong>Denumire Unitate:</strong><br>{{ d.unitate_medicala.value }}</td>
+            <td style="width: 40%;"><strong>Adresă Sediu Clinic:</strong><br>{{ d.adresa_unitate_medicala.value }}</td>
+            <td style="width: 20%;"><strong>Contact Telefon:</strong><br>{{ d.telefon_unitate_medicala.value }}</td>
+        </tr>
+    </table>
+
+    <div class="block-header">2. Informații Identificare Angajator Contractant</div>
+    <table>
+        <tr>
+            <td style="width: 40%;"><strong>Nume Companie / Societate:</strong><br>{{ d.societate_unitate.value }}</td>
+            <td style="width: 40%;"><strong>Adresă Oficială:</strong><br>{{ d.adresa_angajator.value }}</td>
+            <td style="width: 20%;"><strong>Număr Telefon:</strong><br>{{ d.telefon_angajator.value }}</td>
+        </tr>
+    </table>
+
+    <div class="block-header">3. Date Personale de Înregistrare Angajat</div>
+    <table>
+        <tr>
+            <td style="width: 25%;"><strong>Nume De Familie:</strong><br>{{ d.nume.value }}</td>
+            <td style="width: 25%;"><strong>Prenume Complet:</strong><br>{{ d.prenume.value }}</td>
+            <td style="width: 25%;"><strong>Cod Numeric Personal:</strong><br>{{ d.cnp.value }}</td>
+            <td style="width: 25%;"><strong>Număr Referință Fișă:</strong><br><strong>{{ d.numar_fisa.value }}</strong></td>
+        </tr>
+        <tr>
+            <td colspan="2"><strong>Profesie / Funcție Curentă:</strong><br>{{ d.profesie_functie.value }}</td>
+            <td colspan="2"><strong>Loc de Muncă Specific:</strong><br>{{ d.loc_de_munca.value }}</td>
+        </tr>
+    </table>
+
+    <div class="block-header">4. Segmentare Tipuri Control de Medicină a Muncii</div>
+    <div style="border: 1px solid #A0A0A0; padding: 8px; border-top: none; background: #fdfdfd;">
+        <div style="margin-bottom: 5px; font-weight: bold; color: #555;">Șir descriptiv control identificat: {{ d.tip_control.value }}</div>
+        <div class="box-list">
+            <div class="box-item"><div class="indicator">{% if d.control_angajare.value %}✓{% endif %}</div> Control Angajare</div>
+            <div class="box-item"><div class="indicator">{% if d.control_periodic.value %}✓{% endif %}</div> Control Periodic</div>
+            <div class="box-item"><div class="indicator">{% if d.control_adaptare.value %}✓{% endif %}</div> Control Adaptare</div>
+            <div class="box-item"><div class="indicator">{% if d.control_reluare.value %}✓{% endif %}</div> Reluare Lucru</div>
+            <div class="box-item"><div class="indicator">{% if d.control_supraveghere.value %}✓{% endif %}</div> Supraveghere Spec.</div>
+            <div class="box-item"><div class="indicator">{% if d.control_alte.value %}✓{% endif %}</div> Alte Tipuri Control</div>
+        </div>
+    </div>
+
+    <div class="block-header">5. Concluzii Evaluare Clinică de Aptitudini (Avize)</div>
+    <table>
+        <tr style="background:#f5f5f5; font-weight: bold;">
+            <td style="width: 25%;">Aptitudine Completă</td>
+            <td style="width: 25%;">Aptitudine Condiționată</td>
+            <td style="width: 25%;">Inaptitudine Temporară</td>
+            <td style="width: 25%;">Inaptitudine Permanentă</td>
+        </tr>
+        <tr>
+            <td style="text-align: center; font-size: 14px; font-weight: bold;">{{ '[ X ]' if d.aviz_apt.value else '[  ]' }}</td>
+            <td style="text-align: center; font-size: 14px; font-weight: bold;">{{ '[ X ]' if d.aviz_apt_conditionat.value else '[  ]' }}</td>
+            <td style="text-align: center; font-size: 14px; font-weight: bold;">{{ '[ X ]' if d.aviz_inapt_temporar.value else '[  ]' }}</td>
+            <td style="text-align: center; font-size: 14px; font-weight: bold;">{{ '[ X ]' if d.aviz_inapt.value else '[  ]' }}</td>
+        </tr>
+        <tr>
+            <td colspan="4">
+                <strong>Text Decizie Aviz Catalogat:</strong> {{ d.aviz_medical.value }}<br>
+                <strong>Recomandări Medicale Prescrise Direct:</strong> {{ d.recomandari.value }}
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2"><strong>Data Certificării:</strong> {{ d.display_data }}</td>
+            <td colspan="2"><strong>Data Expirării Valabilității:</strong> {{ d.display_data_urm }}</td>
+        </tr>
+    </table>
+</body>
+</html>

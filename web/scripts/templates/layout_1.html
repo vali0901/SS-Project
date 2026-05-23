@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    body { font-family: '{{ font }}', sans-serif; padding: 30px; font-size: 11px; color: #222; background: #fff; }
+    .brand { font-size: 18px; font-weight: bold; color: #004B7D; border-bottom: 2px solid #004B7D; padding-bottom: 5px; margin-bottom: 15px; }
+    .grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; background: #f4f4f4; padding: 12px; border: 1px solid #ccc; margin-bottom: 15px; }
+    .section-bar { background: #1A365D; color: white; font-weight: bold; padding: 4px 8px; margin-top: 15px; text-transform: uppercase; font-size: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 2px; }
+    td { border: 1px solid #bbb; padding: 6px; text-align: left; }
+    .snapshot { background: #fafafa; border: 1px solid #ccc; padding: 12px; font-family: monospace; font-size: 11px; margin-top: 5px; line-height: 1.5; }
+    .status-tag { font-weight: bold; color: #004B7D; }
+</style>
+</head>
+<body>
+    <div class="brand">SOLUȚII DE COLECTARE ÎNREGISTRĂRI MEDICALE <span style="float:right; font-size:11px; color:#666;">Sumar Document Extras</span></div>
+    
+    <div class="grid-container">
+        <div><strong>Unitate Emitentă:</strong> <br>{{ d.unitate_medicala.value }}</div>
+        <div><strong>Adresă Clinică:</strong> <br>{{ d.adresa_unitate_medicala.value }}</div>
+        <div><strong>Telefon Clinică:</strong> <br>{{ d.telefon_unitate_medicala.value }}</div>
+        <div><strong>Nr. Înregistrare Fișă:</strong> <br><span class="status-tag">{{ d.numar_fisa.value }}</span></div>
+    </div>
+
+    <div class="section-bar">Date de Identificare Angajator</div>
+    <table>
+        <tr>
+            <td style="width: 33%;"><strong>Societate/Unitate:</strong> {{ d.societate_unitate.value }}</td>
+            <td style="width: 34%;"><strong>Adresă Angajator:</strong> {{ d.adresa_angajator.value }}</td>
+            <td style="width: 33%;"><strong>Telefon Angajator:</strong> {{ d.telefon_angajator.value }}</td>
+        </tr>
+    </table>
+
+    <div class="section-bar">Date Personale și Profesionale Angajat</div>
+    <table>
+        <tr>
+            <td><strong>Nume:</strong> {{ d.nume.value }}</td>
+            <td><strong>Prenume:</strong> {{ d.prenume.value }}</td>
+            <td><strong>CNP:</strong> {{ d.cnp.value }}</td>
+        </tr>
+        <tr>
+            <td><strong>Profesie/Funcție:</strong> {{ d.profesie_functie.value }}</td>
+            <td colspan="2"><strong>Loc de Muncă Alocat:</strong> {{ d.loc_de_munca.value }}</td>
+        </tr>
+    </table>
+
+    <div class="section-bar">Sumar Evaluare și Tip Control</div>
+    <div class="snapshot">
+        <strong>[METADATE EXTRĂSE CONSOLIDATE]</strong><br>
+        • Tip Control Text Complet: {{ d.tip_control.value }}<br>
+        • Indicatori Tipuri Control Boli/Muncă:<br>
+          &nbsp;&nbsp;- Angajare: {{ 'DA' if d.control_angajare.value else 'NU' }} | 
+          &nbsp;&nbsp;- Periodic: {{ 'DA' if d.control_periodic.value else 'NU' }} | 
+          &nbsp;&nbsp;- Adaptare: {{ 'DA' if d.control_adaptare.value else 'NU' }} | 
+          &nbsp;&nbsp;- Reluare Muncă: {{ 'DA' if d.control_reluare.value else 'NU' }} | 
+          &nbsp;&nbsp;- Supraveghere Specială: {{ 'DA' if d.control_supraveghere.value else 'NU' }} | 
+          &nbsp;&nbsp;- Alte: {{ 'DA' if d.control_alte.value else 'NU' }}<br>
+        • Concluzie Aviz Medical Principal: <strong>{{ d.aviz_medical.value }}</strong><br>
+        • Matrice Status Concluzie:<br>
+          &nbsp;&nbsp;[APT: {{ 'X' if d.aviz_apt.value else '-' }}] 
+          [APT CONDIȚIONAT: {{ 'X' if d.aviz_apt_conditionat.value else '-' }}] 
+          [INAPT TEMPORAR: {{ 'X' if d.aviz_inapt_temporar.value else '-' }}] 
+          [INAPT: {{ 'X' if d.aviz_inapt.value else '-' }}]<br>
+        • Recomandări Prescrise: {{ d.recomandari.value }}<br>
+        • Dată Examinare: {{ d.display_data }} | Dată Următoarea Examinare: {{ d.display_data_urm }}
+    </div>
+</body>
+</html>

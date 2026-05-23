@@ -1,0 +1,164 @@
+{
+    "unitate_medicala": {
+        "value": "Spitalul Regina Maria",
+        "confidence": 0.86,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "adresa_unitate_medicala": {
+        "value": "Bulevardul Ion Mihalache, nr. 9, Sector 4",
+        "confidence": 0.89,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "telefon_unitate_medicala": {
+        "value": "+40 21 402 35 57",
+        "confidence": 0.97,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "numar_fisa": {
+        "value": "377633",
+        "confidence": 0.87,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "societate_unitate": {
+        "value": "Tehnologii Digitale SA",
+        "confidence": 0.87,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "adresa_angajator": {
+        "value": "Bulevardul Unirii, nr. 164, București",
+        "confidence": 0.87,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "telefon_angajator": {
+        "value": "0726359336",
+        "confidence": 0.9,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "nume": {
+        "value": "Matei",
+        "confidence": 0.97,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "prenume": {
+        "value": "Ion",
+        "confidence": 0.99,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "cnp": {
+        "value": "5760115193562",
+        "confidence": 0.89,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "profesie_functie": {
+        "value": "MANAGER",
+        "confidence": 0.92,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "loc_de_munca": {
+        "value": "Departamentul Administrativ, București",
+        "confidence": 0.87,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "tip_control": {
+        "value": "Control Adaptare",
+        "confidence": 0.85,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "control_angajare": {
+        "value": false,
+        "confidence": 0.99,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "control_periodic": {
+        "value": false,
+        "confidence": 0.88,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "control_adaptare": {
+        "value": true,
+        "confidence": 0.95,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "control_reluare": {
+        "value": false,
+        "confidence": 0.99,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "control_supraveghere": {
+        "value": false,
+        "confidence": 0.85,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "control_alte": {
+        "value": false,
+        "confidence": 0.89,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "aviz_medical": {
+        "value": "APT",
+        "confidence": 0.91,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "aviz_apt": {
+        "value": true,
+        "confidence": 0.93,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "aviz_apt_conditionat": {
+        "value": false,
+        "confidence": 0.92,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "aviz_inapt_temporar": {
+        "value": false,
+        "confidence": 0.87,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "aviz_inapt": {
+        "value": false,
+        "confidence": 0.99,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "recomandari": {
+        "value": "Nicio recomandare restrictivă. Apt pentru lucrul curent.",
+        "confidence": 0.95,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "data": {
+        "value": "2026-05-20T09:00:00Z",
+        "confidence": 0.88,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "data_urm_examinari": {
+        "value": "2027-05-20T09:00:00Z",
+        "confidence": 0.89,
+        "is_edited": false,
+        "is_validated": false
+    }
+}

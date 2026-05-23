@@ -1,0 +1,164 @@
+{
+    "unitate_medicala": {
+        "value": "S.C. ANIMA SPECIALITY MEDICAL SERVICES S.R.L.",
+        "confidence": 0.98,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "adresa_unitate_medicala": {
+        "value": "Strada Mihai Eminescu, nr. 37, Sector 5",
+        "confidence": 0.97,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "telefon_unitate_medicala": {
+        "value": "+40 21 403 73 51",
+        "confidence": 0.88,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "numar_fisa": {
+        "value": "271599",
+        "confidence": 0.99,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "societate_unitate": {
+        "value": "Logistica Română SRL",
+        "confidence": 0.96,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "adresa_angajator": {
+        "value": "Splaiul Independenței, nr. 130, București",
+        "confidence": 0.98,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "telefon_angajator": {
+        "value": "0728417255",
+        "confidence": 0.86,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "nume": {
+        "value": "Marinescu",
+        "confidence": 0.87,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "prenume": {
+        "value": "Ion",
+        "confidence": 0.85,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "cnp": {
+        "value": "5500303456454",
+        "confidence": 0.88,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "profesie_functie": {
+        "value": "INGINER",
+        "confidence": 0.88,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "loc_de_munca": {
+        "value": "Direcția Resurse Umane, București",
+        "confidence": 0.99,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "tip_control": {
+        "value": "Control Angajare",
+        "confidence": 0.96,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "control_angajare": {
+        "value": true,
+        "confidence": 0.87,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "control_periodic": {
+        "value": false,
+        "confidence": 0.9,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "control_adaptare": {
+        "value": false,
+        "confidence": 1.0,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "control_reluare": {
+        "value": false,
+        "confidence": 0.96,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "control_supraveghere": {
+        "value": false,
+        "confidence": 0.9,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "control_alte": {
+        "value": false,
+        "confidence": 0.9,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "aviz_medical": {
+        "value": "APT",
+        "confidence": 0.87,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "aviz_apt": {
+        "value": true,
+        "confidence": 0.93,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "aviz_apt_conditionat": {
+        "value": false,
+        "confidence": 1.0,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "aviz_inapt_temporar": {
+        "value": false,
+        "confidence": 0.89,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "aviz_inapt": {
+        "value": false,
+        "confidence": 0.94,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "recomandari": {
+        "value": "Nicio recomandare restrictivă. Apt pentru lucrul curent.",
+        "confidence": 0.88,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "data": {
+        "value": "2026-04-27T09:00:00Z",
+        "confidence": 0.88,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "data_urm_examinari": {
+        "value": "2027-04-27T09:00:00Z",
+        "confidence": 0.89,
+        "is_edited": false,
+        "is_validated": false
+    }
+}
