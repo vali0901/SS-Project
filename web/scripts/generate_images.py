@@ -173,7 +173,7 @@ def main():
                 v_width, v_height = OBS_CANVAS_WIDTH, OBS_CANVAS_HEIGHT
             else:
                 # Match landscape viewport rules specifically for the dual-page Fișă de Aptitudine layout
-                v_width, v_height = (1250, 850) if selected_layout == "layout_2.html" else (850, 1150)
+                v_width, v_height = (850, 1150)
             
             page = browser.new_page(viewport={"width": v_width, "height": v_height})
             page.set_content(html_content)
@@ -187,7 +187,7 @@ def main():
             page.close()
             
             # Run image degradation
-            apply_image_degradation(img_path)
+            # apply_image_degradation(img_path)
             
             # Remove localized string formatters used solely for UI visualization
             record_data.pop("display_data", None)

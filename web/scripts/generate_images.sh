@@ -8,4 +8,4 @@ pip install -r requirements.txt
 playwright install chromium
 
 
-python generate_images.py --out_dir ../medical-images/generated-obs-native --count 10 --obs_portrait
+python generate_images.py --out_dir ../medical-images/generated --count 10 --obs_portrait
