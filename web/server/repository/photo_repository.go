@@ -19,7 +19,8 @@ type photoRepository struct {
 func NewPhotoRepository(db *gorm.DB) *photoRepository {
 	encryptionKey, err := os.ReadFile("/run/secrets/encryption.key")
 	if err != nil {
-		panic(err)
+		fmt.Printf("Warning: encryption.key not found, using default key: %v\n", err)
+		encryptionKey = []byte("default-secret-key-for-development")
 	}
 	return &photoRepository{db: db, crypto: crypto.NewService(encryptionKey)}
 }

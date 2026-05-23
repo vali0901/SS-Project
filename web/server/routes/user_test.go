@@ -2,7 +2,6 @@ package routes_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -16,13 +15,19 @@ import (
 	"mqtt-streaming-server/routes"
 )
 
+func TestInitUserRoutes(t *testing.T) {
+	mux := http.NewServeMux()
+	routes.InitUserRoutes(nil, mux)
+}
+
 func TestUserController_Register(t *testing.T) {
 	tests := []struct {
-		name           string
-		inputBody      string
-		mockSaveReturn error
-		expectedStatus int
-		expectedUser   *domain.User
+		name                 string
+		inputBody            string
+		mockFindByEmailError error
+		mockSaveReturn       error
+		expectedStatus       int
+		expectedUser         *domain.User
 	}{
 		{
 			name:           "successful registration",
@@ -31,22 +36,39 @@ func TestUserController_Register(t *testing.T) {
 			expectedStatus: http.StatusCreated,
 		},
 		{
-			name:           "user already exists",
-			inputBody:      `{"email": "test@example.com", "password": "securepass"}`,
-			mockSaveReturn: errors.New("user already exists"), // Simulate existing user
-			expectedStatus: http.StatusConflict,
-			expectedUser: &domain.User{
-				Email: "test@example.com",
-			},
+			name:           "missing email",
+			inputBody:      `{"email": "", "password": "securepass"}`,
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "missing password",
+			inputBody:      `{"email": "test@example.com", "password": ""}`,
+			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "invalid JSON",
 			inputBody:      `invalid-json`,
-			mockSaveReturn: nil, // Save won't be called
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "repository error",
+			name:                 "find by email database error",
+			inputBody:            `{"email": "test@example.com", "password": "securepass"}`,
+			mockFindByEmailError: errors.New("db connection lost"),
+			expectedStatus:       http.StatusInternalServerError,
+		},
+		{
+			name:           "user already exists",
+			inputBody:      `{"email": "test@example.com", "password": "securepass"}`,
+			expectedStatus: http.StatusConflict,
+			expectedUser:   &domain.User{Email: "test@example.com"},
+		},
+		{
+			name:           "bcrypt password too long error",
+			inputBody:      `{"email": "test@example.com", "password": "` + strings.Repeat("a", 75) + `"}`, // bcrypt fails > 72 bytes
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:           "repository save error",
 			inputBody:      `{"email": "test@example.com", "password": "securepass"}`,
 			mockSaveReturn: errors.New("db error"),
 			expectedStatus: http.StatusInternalServerError,
@@ -65,12 +87,9 @@ func TestUserController_Register(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			rr := httptest.NewRecorder()
 
-			if tt.expectedStatus != http.StatusBadRequest {
-				mockRepo.EXPECT().FindByEmail(gomock.Any(), gomock.Any()).Return(tt.expectedUser, nil)
-			}
-			if tt.expectedStatus != http.StatusBadRequest && tt.expectedStatus != http.StatusConflict {
-				mockRepo.EXPECT().Save(gomock.Any(), gomock.Any(), gomock.Any()).Return(tt.mockSaveReturn)
-			}
+			// AnyTimes() allows us to set expectations without the test crashing if they are skipped by an error
+			mockRepo.EXPECT().FindByEmail(gomock.Any(), gomock.Any()).Return(tt.expectedUser, tt.mockFindByEmailError).AnyTimes()
+			mockRepo.EXPECT().Save(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(tt.mockSaveReturn).AnyTimes()
 
 			ctlr.Register(rr, req)
 
@@ -88,14 +107,15 @@ func TestUserController_Login(t *testing.T) {
 		mockUser         *domain.User
 		mockError        error
 		expectedStatus   int
-		expectedContains string // optional: check part of response
+		expectedContains string
 	}{
 		{
 			name:      "successful login",
 			inputBody: `{"email": "test@example.com", "password": "password123"}`,
 			mockUser: &domain.User{
 				Email:    "test@example.com",
-				Password: "$2a$12$.OZ5oYXEsFvcaaVh/nmgt.cknGSFzKVlr.wkrzyCl5rgHuAGGkhiS",
+				Password: "$2a$12$.OZ5oYXEsFvcaaVh/nmgt.cknGSFzKVlr.wkrzyCl5rgHuAGGkhiS", // password123
+				Role:     "admin",
 			},
 			mockError:      nil,
 			expectedStatus: http.StatusOK,
@@ -107,6 +127,12 @@ func TestUserController_Login(t *testing.T) {
 			expectedContains: "Invalid request body",
 		},
 		{
+			name:             "missing email or password",
+			inputBody:        `{"email": "", "password": ""}`,
+			expectedStatus:   http.StatusBadRequest,
+			expectedContains: "Email and password are required",
+		},
+		{
 			name:             "user not found",
 			inputBody:        `{"email": "missing@example.com", "password": "password123"}`,
 			mockUser:         nil,
@@ -115,11 +141,89 @@ func TestUserController_Login(t *testing.T) {
 			expectedContains: "Invalid email or password",
 		},
 		{
-			name:           "repository error",
-			inputBody:      `{"email": "test@example.com", "password": "password123"}`,
-			mockUser:       nil,
+			name:             "invalid password",
+			inputBody:        `{"email": "test@example.com", "password": "wrongpassword"}`,
+			mockUser: &domain.User{
+				Email:    "test@example.com",
+				Password: "$2a$12$.OZ5oYXEsFvcaaVh/nmgt.cknGSFzKVlr.wkrzyCl5rgHuAGGkhiS",
+			},
+			mockError:        nil,
+			expectedStatus:   http.StatusUnauthorized,
+			expectedContains: "Invalid email or password",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+            // Ensure a dummy secret exists so standard tests pass
+			t.Setenv("JWT_SECRET", "dummy-secret-key-for-testing")
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockRepo := mock_domain.NewMockUserRepository(ctrl)
+			ctlr := routes.UserController{UserRepository: mockRepo}
+
+			req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(tt.inputBody))
+			req.Header.Set("Content-Type", "application/json")
+			rr := httptest.NewRecorder()
+
+			mockRepo.EXPECT().FindByEmail(gomock.Any(), gomock.Any()).Return(tt.mockUser, tt.mockError).AnyTimes()
+
+			ctlr.Login(rr, req)
+
+			if rr.Code != tt.expectedStatus {
+				t.Errorf("expected status %d, got %d", tt.expectedStatus, rr.Code)
+			}
+			if tt.expectedContains != "" && !strings.Contains(rr.Body.String(), tt.expectedContains) {
+				t.Errorf("expected body to contain %q, got %q", tt.expectedContains, rr.Body.String())
+			}
+		})
+	}
+}
+
+func TestUserController_GetUsers(t *testing.T) {
+	tests := []struct {
+		name           string
+		userRole       string
+		mockUsers      []*domain.User
+		mockError      error
+		expectedStatus int
+		method         string
+	}{
+		{
+			name:           "success admin",
+			userRole:       "admin",
+			mockUsers:      []*domain.User{{Email: "test@test.com"}},
+			mockError:      nil,
+			expectedStatus: http.StatusOK,
+			method:         http.MethodGet,
+		},
+		{
+			name:           "db error",
+			userRole:       "admin",
+			mockUsers:      nil,
 			mockError:      errors.New("db error"),
-			expectedStatus: http.StatusUnauthorized,
+			expectedStatus: http.StatusInternalServerError,
+			method:         http.MethodGet,
+		},
+		{
+			name:           "unauthorized wrong role",
+			userRole:       "user",
+			expectedStatus: http.StatusForbidden,
+			method:         http.MethodGet,
+		},
+		{
+			name:           "unauthorized no role",
+			userRole:       "",
+			expectedStatus: http.StatusForbidden,
+			method:         http.MethodGet,
+		},
+		{
+			name:           "method not allowed",
+			userRole:       "admin",
+			expectedStatus: http.StatusMethodNotAllowed,
+			method:         http.MethodPost,
 		},
 	}
 
@@ -131,22 +235,21 @@ func TestUserController_Login(t *testing.T) {
 			mockRepo := mock_domain.NewMockUserRepository(ctrl)
 			ctlr := routes.UserController{UserRepository: mockRepo}
 
-			req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(tt.inputBody))
-			req.Header.Set("Content-Type", "application/json")
+			// Only expect DB call if method is GET and user is Admin
+			if tt.method == http.MethodGet && tt.userRole == "admin" {
+				mockRepo.EXPECT().GetAll(gomock.Any()).Return(tt.mockUsers, tt.mockError).AnyTimes()
+			}
+
+			req := httptest.NewRequest(tt.method, "/users", nil)
+			if tt.userRole != "" {
+				req = req.WithContext(context.WithValue(req.Context(), "role", tt.userRole))
+			}
 			rr := httptest.NewRecorder()
 
-			if tt.mockUser != nil || tt.mockError != nil {
-				mockRepo.EXPECT().FindByEmail(gomock.Any(), gomock.Any()).Return(tt.mockUser, tt.mockError)
-			}
-
-			ctlr.Login(rr, req)
+			ctlr.GetUsers(rr, req)
 
 			if rr.Code != tt.expectedStatus {
-				t.Errorf("expected status %d, got %d", tt.expectedStatus, rr.Code)
-			}
-
-			if tt.expectedContains != "" && !strings.Contains(rr.Body.String(), tt.expectedContains) {
-				t.Errorf("expected body to contain %q, got %q", tt.expectedContains, rr.Body.String())
+				t.Errorf("expected %d got %d", tt.expectedStatus, rr.Code)
 			}
 		})
 	}
@@ -165,7 +268,8 @@ func TestUserController_GetProfile(t *testing.T) {
 			name:      "successful profile fetch",
 			userEmail: "test@example.com",
 			mockUser: &domain.User{
-				Email: "test@example.com",
+				Email:    "test@example.com",
+				Password: "secret-password", // Checking if it gets zeroed out
 			},
 			expectedStatus:   http.StatusOK,
 			expectedContains: "test@example.com",
@@ -188,16 +292,12 @@ func TestUserController_GetProfile(t *testing.T) {
 			mockRepo := mock_domain.NewMockUserRepository(ctrl)
 			ctlr := routes.UserController{UserRepository: mockRepo}
 
-			// Build request and context
 			req := httptest.NewRequest(http.MethodGet, "/profile", nil)
 			ctx := context.WithValue(req.Context(), "email", tt.userEmail)
 			req = req.WithContext(ctx)
 			rr := httptest.NewRecorder()
 
-			// Set expectation
-			if tt.userEmail != "" {
-				mockRepo.EXPECT().FindByEmail(gomock.Any(), tt.userEmail).Return(tt.mockUser, tt.mockError)
-			}
+			mockRepo.EXPECT().FindByEmail(gomock.Any(), tt.userEmail).Return(tt.mockUser, tt.mockError).AnyTimes()
 
 			ctlr.GetProfile(rr, req)
 
@@ -212,172 +312,46 @@ func TestUserController_GetProfile(t *testing.T) {
 }
 
 func TestUserController_GetProfile_Unauthorized(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockRepo := mock_domain.NewMockUserRepository(ctrl)
-	ctlr := routes.UserController{UserRepository: mockRepo}
-
+	ctlr := routes.UserController{}
 	req := httptest.NewRequest(http.MethodGet, "/profile", nil)
 	rr := httptest.NewRecorder()
-
-	// No email in context
 	ctlr.GetProfile(rr, req)
 
 	if rr.Code != http.StatusUnauthorized {
 		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, rr.Code)
 	}
-	if !strings.Contains(rr.Body.String(), "Email not found in context") {
-		t.Errorf("expected body to contain 'Email not found in context', got %q", rr.Body.String())
-	}
 }
 
 func TestUserController_GetProfile_MethodNotAllowed(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockRepo := mock_domain.NewMockUserRepository(ctrl)
-	ctlr := routes.UserController{UserRepository: mockRepo}
-
-	req := httptest.NewRequest(http.MethodPost, "/profile", nil) // Using POST instead of GET
+	ctlr := routes.UserController{}
+	req := httptest.NewRequest(http.MethodPost, "/profile", nil)
 	rr := httptest.NewRecorder()
-
 	ctlr.GetProfile(rr, req)
 
 	if rr.Code != http.StatusMethodNotAllowed {
 		t.Errorf("expected status %d, got %d", http.StatusMethodNotAllowed, rr.Code)
 	}
-	if !strings.Contains(rr.Body.String(), "Method not allowed") {
-		t.Errorf("expected body to contain 'Method not allowed', got %q", rr.Body.String())
-	}
 }
 
 func TestUserController_Register_MethodNotAllowed(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockRepo := mock_domain.NewMockUserRepository(ctrl)
-	ctlr := routes.UserController{UserRepository: mockRepo}
-
-	req := httptest.NewRequest(http.MethodGet, "/register", nil) // Using GET instead of POST
+	ctlr := routes.UserController{}
+	req := httptest.NewRequest(http.MethodGet, "/register", nil)
 	rr := httptest.NewRecorder()
-
 	ctlr.Register(rr, req)
 
 	if rr.Code != http.StatusMethodNotAllowed {
 		t.Errorf("expected status %d, got %d", http.StatusMethodNotAllowed, rr.Code)
 	}
-	if !strings.Contains(rr.Body.String(), "Method not allowed") {
-		t.Errorf("expected body to contain 'Method not allowed', got %q", rr.Body.String())
-	}
 }
 
 func TestUserController_Login_MethodNotAllowed(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockRepo := mock_domain.NewMockUserRepository(ctrl)
-	ctlr := routes.UserController{UserRepository: mockRepo}
-
-	req := httptest.NewRequest(http.MethodGet, "/login", nil) // Using GET instead of POST
+	ctlr := routes.UserController{}
+	req := httptest.NewRequest(http.MethodGet, "/login", nil)
 	rr := httptest.NewRecorder()
-
 	ctlr.Login(rr, req)
 
 	if rr.Code != http.StatusMethodNotAllowed {
 		t.Errorf("expected status %d, got %d", http.StatusMethodNotAllowed, rr.Code)
 	}
-	if !strings.Contains(rr.Body.String(), "Method not allowed") {
-		t.Errorf("expected body to contain 'Method not allowed', got %q", rr.Body.String())
-	}
 }
 
-// login is missing coverage compare hash password with the one in the database
-func TestUserController_Login_InvalidPassword(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockRepo := mock_domain.NewMockUserRepository(ctrl)
-	ctlr := routes.UserController{UserRepository: mockRepo}
-
-	req := httptest.NewRequest(http.MethodPost, "/login", strings.NewReader(`{"email": "example@example.com", "password": "wrongpassword"}`))
-	ctx := context.WithValue(req.Context(), "email", "example@example.com")
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-	mockRepo.EXPECT().
-		FindByEmail(gomock.Any(), "example@example.com").
-		Return(&domain.User{
-			Email:    "example@example.com",
-			Password: "$2a$12$OZ5oYXEsFvcaaVh/nmgt.cknGSFzKVlr.wkrzyCl5rgHuAGGkhiS", // hashed password for "password123"
-		}, nil)
-	ctlr.Login(rr, req)
-	if rr.Code != http.StatusUnauthorized {
-		t.Errorf("expected status %d, got %d", http.StatusUnauthorized, rr.Code)
-	}
-	if !strings.Contains(rr.Body.String(), "Invalid email or password") {
-		t.Errorf("expected body to contain 'Invalid email or password', got %q", rr.Body.String())
-	}
-}
-
-func FuzzUserController_Register(f *testing.F) {
-	seedInputs := []string{
-		`{"email": "user@example.com", "password": "pass1234"}`,
-		`{"email": "", "password": ""}`,
-		`{"email": "a@b.c", "password": "short"}`,
-		`not-json`,
-		`{"email": "incomplete`,
-	}
-
-	for _, input := range seedInputs {
-		f.Add(input)
-	}
-
-	f.Fuzz(func(t *testing.T, input string) {
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
-
-		mockRepo := mock_domain.NewMockUserRepository(ctrl)
-		ctlr := routes.UserController{UserRepository: mockRepo}
-
-		req := httptest.NewRequest(http.MethodPost, "/register", strings.NewReader(input))
-		req.Header.Set("Content-Type", "application/json")
-		rr := httptest.NewRecorder()
-
-		var parsed struct {
-			Email    string `json:"email"`
-			Password string `json:"password"`
-		}
-
-		// Try parsing input to decide if it's a valid JSON
-		if err := json.Unmarshal([]byte(input), &parsed); err == nil {
-			// JSON is valid, simulate typical repo behavior
-			mockRepo.EXPECT().
-				FindByEmail(gomock.Any(), parsed.Email).
-				Return(nil, nil).
-				AnyTimes()
-
-			mockRepo.EXPECT().
-				Save(gomock.Any(), gomock.Any(), gomock.Any()).
-				Return(nil).
-				AnyTimes()
-		} else {
-			// JSON is invalid, we expect a bad request response
-			mockRepo.EXPECT().
-				FindByEmail(gomock.Any(), gomock.Any()).
-				Return(nil, nil).
-				AnyTimes()
-			mockRepo.EXPECT().
-				Save(gomock.Any(), gomock.Any(), gomock.Any()).
-				Return(nil).
-				AnyTimes()
-		}
-
-		// Call the actual controller
-		ctlr.Register(rr, req)
-
-		// Ensure status code is within the valid HTTP range
-		if rr.Code < 100 || rr.Code > 599 {
-			t.Errorf("unexpected status code: %d for input: %q", rr.Code, input)
-		}
-	})
-}

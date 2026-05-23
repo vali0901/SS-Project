@@ -64,13 +64,29 @@ func (ctlr UserController) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req domain.User
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	// VALIDATION FIXES
+	if req.Email == "" {
+		http.Error(w, "Email is required", http.StatusBadRequest)
+		return
+	}
+
+	if req.Password == "" {
+		http.Error(w, "Password is required", http.StatusBadRequest)
+		return
+	}
+
 	// look for existing user
-	existingUser, err := ctlr.UserRepository.FindByEmail(r.Context(), req.Email)
+	existingUser, err := ctlr.UserRepository.FindByEmail(
+		r.Context(),
+		req.Email,
+	)
+
 	if err != nil && err != gorm.ErrRecordNotFound {
 		http.Error(w, "Failed to check existing user", http.StatusInternalServerError)
 		return
@@ -81,27 +97,43 @@ func (ctlr UserController) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Hash the password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword(
+		[]byte(req.Password),
+		bcrypt.DefaultCost,
+	)
+
 	if err != nil {
 		http.Error(w, "Failed to hash password", http.StatusInternalServerError)
 		return
 	}
 
-	// Save the user to the database
 	role := req.Role
 	if role == "" {
 		role = "user"
 	}
-	err = ctlr.UserRepository.Save(r.Context(), req.Email, string(hashedPassword), role)
+
+	err = ctlr.UserRepository.Save(
+		r.Context(),
+		req.Email,
+		string(hashedPassword),
+		role,
+	)
+
 	if err != nil {
 		fmt.Printf("Error saving user %s: %v\n", req.Email, err)
 		http.Error(w, "Failed to save user", http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Printf("User registered successfully: %s (role: %s)\n", req.Email, role)
+	fmt.Printf(
+		"User registered successfully: %s (role: %s)\n",
+		req.Email,
+		role,
+	)
+
 	w.WriteHeader(http.StatusCreated)
+
 	fmt.Fprintln(w, "User registered successfully")
 }
 
@@ -112,11 +144,17 @@ func (ctlr UserController) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req domain.User
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	// VALIDATION FIX
+	if req.Email == "" || req.Password == "" {
+		http.Error(w, "Email and password are required", http.StatusBadRequest)
+		return
+	}
 	// Check if the user exists
 	user, err := ctlr.UserRepository.FindByEmail(r.Context(), req.Email)
 	if err != nil {
