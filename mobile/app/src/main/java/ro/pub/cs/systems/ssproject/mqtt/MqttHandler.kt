@@ -70,6 +70,10 @@ class MqttHandler(
             } catch (e: Exception) {
                 Log.e(MqttConstants.TAG, "Connection error: ${e.message}")
                 e.printStackTrace()
+                try {
+                    client?.close()
+                } catch (_: Exception) {}
+                client = null
             } finally {
                 isConnectedCallback(isConnected())
             }
@@ -96,21 +100,24 @@ class MqttHandler(
     fun isConnected(): Boolean {
         return client?.isConnected == true
     }
-
-    suspend fun publishImage(imageBytes: ByteArray, qos: Int = 0) {
-        withContext(Dispatchers.IO) {
-            if (isConnected()) {
-                try {
-                    val message = MqttMessage(imageBytes)
-                    message.qos = qos
-                    message.isRetained = false
-
-                    client?.publish(imageTopic, message)
-                } catch (e: Exception) {
-                    Log.e(MqttConstants.TAG, "Publish error: ${e.message}")
-                }
-            } else {
+-0
+    suspend fun publishImage(imageBytes: ByteArray, qos: Int = 0): Boolean {
+        return withContext(Dispatchers.IO) {
+            if (!isConnected()) {
                 Log.w(MqttConstants.TAG, "Cannot publish: Client is not connected")
+                return@withContext false
+            }
+
+            try {
+                val message = MqttMessage(imageBytes)
+                message.qos = qos
+                message.isRetained = false
+
+                client?.publish(imageTopic, message)
+                true
+            } catch (e: Exception) {
+                Log.e(MqttConstants.TAG, "Publish error: ${e.message}")
+                false
             }
         }
     }

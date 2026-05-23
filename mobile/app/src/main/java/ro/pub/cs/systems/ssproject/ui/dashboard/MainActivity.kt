@@ -26,13 +26,16 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.textview.MaterialTextView
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.asExecutor
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ro.pub.cs.systems.ssproject.R
 import ro.pub.cs.systems.ssproject.mqtt.MqttConstants
 import ro.pub.cs.systems.ssproject.mqtt.MqttHandler
 import ro.pub.cs.systems.ssproject.mqtt.TlsHelper
 import ro.pub.cs.systems.ssproject.utils.ImageUtils
+import ro.pub.cs.systems.ssproject.utils.OfflineImageStore
 import ro.pub.cs.systems.ssproject.utils.PermissionHandler
 import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
@@ -59,6 +62,7 @@ class MainActivity : AppCompatActivity() {
 
     // Helpers
     private var mqttHandler: MqttHandler? = null
+    private lateinit var offlineImageStore: OfflineImageStore
     private lateinit var cameraPermissionHandler: PermissionHandler
     private lateinit var cameraExecutor: Executor
 
@@ -69,9 +73,12 @@ class MainActivity : AppCompatActivity() {
     @Volatile private var shouldCaptureImage = false
     @Volatile private var currentQuality = 90
     @Volatile private var autoSendIntervalMillis = 10000L
+    @Volatile private var isFlushingOfflineImages = false
 
     // Timer helpers
     private var lastSentTime = 0L
+    private var reconnectJob: Job? = null
+    private var offlineFlushJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,6 +88,7 @@ class MainActivity : AppCompatActivity() {
         initializeViews()
         setupListeners()
         updateUiState()
+        offlineImageStore = OfflineImageStore(applicationContext)
 
         val brokerIp = intent.getStringExtra("brokerIp")!!
         val brokerPort = intent.getStringExtra("brokerPort")!!
@@ -116,6 +124,7 @@ class MainActivity : AppCompatActivity() {
             }
         )
         connectMqtt()
+        startConnectionRecovery()
 
         cameraExecutor = Dispatchers.Default.asExecutor()
         cameraPermissionHandler = PermissionHandler(
@@ -192,18 +201,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUiState() {
-        val isConnected = mqttHandler?.isConnected() == true
-
-        if (!isConnected) {
-            captureButton.isEnabled = false
-            autoSendSwitch.isEnabled = false
-            autoSendInputLayout.isEnabled = false
-            autoSendInput.isEnabled = false
-            liveSwitch.isEnabled = false
-            qualitySlider.isEnabled = false
-            return
-        }
-
         qualitySlider.isEnabled = true
 
         if (isLiveMode) {
@@ -238,6 +235,51 @@ class MainActivity : AppCompatActivity() {
             isConnecting = false
         }
         updateUiState()
+    }
+
+    private fun startConnectionRecovery() {
+        reconnectJob?.cancel()
+        reconnectJob = lifecycleScope.launch {
+            while (true) {
+                delay(MainConstants.MQTT_RECONNECT_INTERVAL_MS)
+                if (mqttHandler?.isConnected() == false) {
+                    connectMqtt()
+                }
+            }
+        }
+
+        offlineFlushJob?.cancel()
+        offlineFlushJob = lifecycleScope.launch {
+            while (true) {
+                delay(MainConstants.OFFLINE_FLUSH_INTERVAL_MS)
+                flushOfflineImages()
+            }
+        }
+    }
+
+    private fun flushOfflineImages() {
+        if (
+            isFlushingOfflineImages ||
+            mqttHandler?.isConnected() != true ||
+            offlineImageStore.queuedCount() == 0
+        ) {
+            return
+        }
+
+        lifecycleScope.launch {
+            isFlushingOfflineImages = true
+            try {
+                val result = offlineImageStore.flushNext { imageBytes ->
+                    mqttHandler?.publishImage(imageBytes) == true
+                }
+
+                if (result.sent) {
+                    appendLog(getString(R.string.main_logs_offline_image_sent_entry, result.remaining))
+                }
+            } finally {
+                isFlushingOfflineImages = false
+            }
+        }
     }
 
     private fun handleReceivedCommand(command: String) {
@@ -305,12 +347,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun processImage(image: ImageProxy) {
-        val isConnected = mqttHandler?.isConnected() == true
-        if (!isConnected) {
-            image.close()
-            return
-        }
-
         val currentTime = System.currentTimeMillis()
         var proceedToSend = false
 
@@ -359,9 +395,16 @@ class MainActivity : AppCompatActivity() {
             image.close()
 
             lifecycleScope.launch {
-                mqttHandler?.publishImage(jpegBytes)
-                if (!isLiveMode) {
-                    appendLog(getString(R.string.main_logs_image_sent_entry, jpegBytes.size / 1024.0))
+                val sent = mqttHandler?.publishImage(jpegBytes) == true
+                if (sent) {
+                    if (!isLiveMode) {
+                        appendLog(getString(R.string.main_logs_image_sent_entry, jpegBytes.size / 1024.0))
+                    }
+                } else {
+                    val queuedCount = offlineImageStore.save(jpegBytes)
+                    if (!isLiveMode) {
+                        appendLog(getString(R.string.main_logs_image_saved_offline_entry, queuedCount))
+                    }
                 }
             }
 
@@ -389,6 +432,8 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
 
         if (isFinishing) {
+            reconnectJob?.cancel()
+            offlineFlushJob?.cancel()
             ProcessLifecycleOwner.get().lifecycleScope.launch {
                 mqttHandler?.disconnect()
             }
