@@ -11,12 +11,12 @@ import (
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/otiai10/gosseract/v2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"mqtt-streaming-server/broker"
 	"mqtt-streaming-server/domain"
+	"mqtt-streaming-server/ocr"
 	"mqtt-streaming-server/routes"
 )
 
@@ -50,7 +50,7 @@ func main() {
 		os.Getenv("POSTGRES_PASSWORD"),
 		os.Getenv("POSTGRES_DB"),
 	)
-	
+
 	var db *gorm.DB
 	var err error
 	maxRetries := 10
@@ -80,9 +80,23 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
-	ocrClient := gosseract.NewClient()
-	ocrClient.SetLanguage("eng", "ron")
+	// Initialize OCR client connected to the remote OCR service
+	ocrHost := os.Getenv("OCR_SERVICE_HOST")
+	if ocrHost == "" {
+		ocrHost = "ocr-service"
+	}
+	ocrPort := os.Getenv("OCR_SERVICE_PORT")
+	if ocrPort == "" {
+		ocrPort = "50051"
+	}
+
+	ocrClient, err := ocr.NewClient(ocrHost, ocrPort)
+	if err != nil {
+		fmt.Printf("Failed to connect to OCR service: %v\n", err)
+		panic(err)
+	}
 	defer ocrClient.Close()
+
 	brokerHandler := broker.NewBrokerHandler(db, ocrClient)
 
 	tlsconfig := NewTLSConfig()

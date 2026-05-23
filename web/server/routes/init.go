@@ -8,16 +8,16 @@ import (
 	"os"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/otiai10/gosseract/v2"
 	"gorm.io/gorm"
 
+	"mqtt-streaming-server/ocr"
 	"mqtt-streaming-server/utils"
 )
 
-func InitRoutes(db *gorm.DB, mqttClient mqtt.Client, ocrClient *gosseract.Client) http.Handler {
+func InitRoutes(db *gorm.DB, mqttClient mqtt.Client, ocrClient *ocr.Client) http.Handler {
 	mux := http.NewServeMux()
 	InitUserRoutes(db, mux)
-	InitPhotoRoutes(db, ocrClient, mux)
+	InitPhotoRoutes(db, nil, mux) // dont use built in OCR engine
 	InitDeviceRoutes(db, mqttClient, mux)
 
 	// Serve static files from ./uploads
