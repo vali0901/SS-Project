@@ -24,6 +24,7 @@ services:
       - ca.crt
       - web.crt
       - web.key
+      - encryption.key
 
   client:
     build: ./client
@@ -115,3 +116,5 @@ secrets:
     file: ./secrets/ocr.crt
   ocr.key:
     file: ./secrets/ocr.key
+  encryption.key:
+    file: ./secrets/encryption.key

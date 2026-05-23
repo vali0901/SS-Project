@@ -147,4 +147,12 @@ openssl verify -CAfile ca.crt ocr.crt
 chmod 444 *.crt
 chmod 444 *.key
 
+# generare key pt criptare in db
+if [ ! -f "encryption.key" ]; then
+    echo "[+] Generare cheie de criptare pentru baza de date..."
+    openssl rand -out encryption.key 32
+else
+    echo "[~] Cheia de criptare există deja."
+fi
+
 echo "[SUCCES] Procesul a fost finalizat cu succes!"
