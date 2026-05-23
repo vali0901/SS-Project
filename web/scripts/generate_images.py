@@ -38,7 +38,21 @@ def wrap_field(value):
         "is_validated": random.choice([True, False])
     }
 
-def generate_random_photo():
+def build_expiry_date(base_time, next_month_expiry_rate):
+    """Generate expiry date with configurable bias toward next calendar month."""
+    now = datetime.now()
+    next_month_start = (now.replace(day=1) + timedelta(days=32)).replace(day=1)
+    month_after_next_start = (next_month_start + timedelta(days=32)).replace(day=1)
+
+    if random.random() < next_month_expiry_rate:
+        days_in_next_month = (month_after_next_start - next_month_start).days
+        day = random.randint(1, days_in_next_month)
+        return next_month_start.replace(day=day, hour=9, minute=0, second=0, microsecond=0)
+
+    return base_time + timedelta(days=365)
+
+
+def generate_random_photo(ocr_success_rate=0.9, latency_min_ms=120, latency_max_ms=1800, next_month_expiry_rate=0.7):
     timestamp = datetime.now() - timedelta(days=random.randint(0, 45))
     nume = random.choice(SURNAMES)
     prenume = random.choice(NAMES)
@@ -53,7 +67,7 @@ def generate_random_photo():
     
     # 3. Formulate Dates Into ISO 8601 (RFC3339) Strings for Go's time.Time
     time_base = timestamp.replace(hour=9, minute=0, second=0, microsecond=0)
-    time_expiry = time_base + timedelta(days=365)
+    time_expiry = build_expiry_date(time_base, next_month_expiry_rate)
     
     go_time_format = "%Y-%m-%dT%H:%M:%SZ"
     
@@ -61,8 +75,8 @@ def generate_random_photo():
     tel_clinic = f"+40 21 {random.randint(400, 409)} {random.randint(10, 99)} {random.randint(10, 99)}"
     tel_company = f"07{random.randint(22, 76)}{random.randint(100, 999)}{random.randint(100, 999)}"
 
-    ocr_success = random.random() < 0.95
-    processing_latency_ms = random.randint(120, 1800)
+    ocr_success = random.random() < ocr_success_rate
+    processing_latency_ms = random.randint(latency_min_ms, latency_max_ms)
 
     meta = {
         "timestamp": timestamp,
@@ -208,6 +222,7 @@ def main():
     parser.add_argument("--ocr-success-rate", type=float, default=0.9, help="Probability [0.0-1.0] that OCR succeeds.")
     parser.add_argument("--latency-min-ms", type=int, default=120, help="Minimum processing latency in ms.")
     parser.add_argument("--latency-max-ms", type=int, default=1800, help="Maximum processing latency in ms.")
+    parser.add_argument("--next-month-expiry-rate", type=float, default=0.7, help="Probability [0.0-1.0] that data_urm_examinari is in next calendar month.")
     parser.add_argument(
         "--obs_portrait",
         action="store_true",
@@ -217,6 +232,7 @@ def main():
 
     # Keep bounds sane and deterministic for test data generation.
     args.ocr_success_rate = max(0.0, min(1.0, args.ocr_success_rate))
+    args.next_month_expiry_rate = max(0.0, min(1.0, args.next_month_expiry_rate))
     if args.latency_min_ms < 0:
         args.latency_min_ms = 0
     if args.latency_max_ms < args.latency_min_ms:
@@ -235,11 +251,12 @@ def main():
         browser = p.chromium.launch()
         
         for idx in range(1, args.count + 1):
-            meta, record_data = generate_random_photo()
-            meta["ocr_success"] = random.random() < args.ocr_success_rate
-            meta["processing_latency_ms"] = random.randint(args.latency_min_ms, args.latency_max_ms)
-            if not meta["ocr_success"]:
-                meta["ocr_text"] = "OCR failed"
+            meta, record_data = generate_random_photo(
+                ocr_success_rate=args.ocr_success_rate,
+                latency_min_ms=args.latency_min_ms,
+                latency_max_ms=args.latency_max_ms,
+                next_month_expiry_rate=args.next_month_expiry_rate,
+            )
             selected_layout = random.choice(layouts)
             selected_font = random.choice(fonts)
             

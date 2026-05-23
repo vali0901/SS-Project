@@ -56,3 +56,10 @@ export interface PerformanceMetrics {
   average_latency_ms: number;
   p95_latency_ms: number;
 }
+
+export interface MedicalInsights {
+  last_month_count: number;
+  expiring_next_month_people: number;
+  expiring_next_month_names: string[];
+  total_medicina_muncii_in_documents: number;
+}

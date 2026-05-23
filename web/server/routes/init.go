@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"gorm.io/gorm"
@@ -13,6 +14,8 @@ import (
 	"mqtt-streaming-server/ocr"
 	"mqtt-streaming-server/utils"
 )
+
+var serverInstanceID = time.Now().UTC().Format(time.RFC3339Nano)
 
 func InitRoutes(db *gorm.DB, mqttClient mqtt.Client, ocrClient *ocr.Client) http.Handler {
 	mux := http.NewServeMux()
@@ -47,8 +50,9 @@ func handleBrokerInfo(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
-		"ip":   ip,
-		"port": port,
+		"ip":                 ip,
+		"port":               port,
+		"server_instance_id": serverInstanceID,
 	})
 }
 

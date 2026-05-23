@@ -45,6 +45,7 @@ func InitPhotoRoutes(db *gorm.DB, ocrClient *gosseract.Client, mux *http.ServeMu
 		}
 	})))
 	mux.Handle("/photos/performance", withAuth(http.HandlerFunc(photoController.GetPerformanceMetrics)))
+	mux.Handle("/photos/medical-insights", withAuth(http.HandlerFunc(photoController.GetMedicalInsights)))
 	mux.Handle("/photos/anonymized/export", withAuth(http.HandlerFunc(photoController.DownloadAnonymizedDataset)))
 	mux.Handle("/photos/all", withAuth(http.HandlerFunc(photoController.DeleteAllPhotos)))
 	mux.Handle("/photos/", withAuth(http.HandlerFunc(photoController.HandlePhotoByID)))
