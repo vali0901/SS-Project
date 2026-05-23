@@ -9,6 +9,9 @@ RUN yarn install --frozen-lockfile
 # Copy the rest of the application
 COPY . .
 
+# Make node_modules writable by any user (for anonymous volume with custom UID)
+RUN chmod -R 777 /app/node_modules
+
 # Set environment variables
 ENV CHOKIDAR_USEPOLLING=true
 

@@ -28,6 +28,7 @@ services:
     container_name: client
     volumes:
       - ./client:/app
+      - /app/node_modules
     ports:
       - "5173:5173"
     networks:
