@@ -40,9 +40,32 @@ export interface Photo {
   id: string;
   timestamp: string;
   image_type: string;
+  processing_latency_ms: number;
+  ocr_success: boolean;
   presigned_url: string;
   device_id: string;
   user_email: string;
   text: string;
   medical_data: MedicalData;
+}
+
+export interface PerformanceMetrics {
+  total_documents: number;
+  ocr_success_count: number;
+  ocr_success_rate: number;
+  average_latency_ms: number;
+  p95_latency_ms: number;
+}
+
+export interface MedicalInsights {
+  last_month_count: number;
+  expiring_next_month_people: number;
+  expiring_next_month_names: string[];
+  expiring_next_month_entries: ExpiringPerson[];
+  total_medicina_muncii_in_documents: number;
+}
+
+export interface ExpiringPerson {
+  name: string;
+  expiration_date: string;
 }
