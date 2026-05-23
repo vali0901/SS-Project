@@ -2,15 +2,16 @@ FROM node:22-alpine
 
 WORKDIR /app
 
+# Use the node user for better security and ownership
+RUN mkdir -p /app && chown -R node:node /app
+USER node
+
 # Install dependencies first (better caching)
-COPY package.json yarn.lock ./
+COPY --chown=node:node package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
 
 # Copy the rest of the application
-COPY . .
-
-# Make node_modules writable by any user (for anonymous volume with custom UID)
-RUN chmod -R 777 /app/node_modules
+COPY --chown=node:node . .
 
 # Set environment variables
 ENV CHOKIDAR_USEPOLLING=true
