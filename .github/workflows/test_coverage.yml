@@ -34,9 +34,9 @@ jobs:
 
       - name: Generate Mocks
         run: |
-          go run go.uber.org/mock/mockgen@latest -source=domain/user.go -destination=mocks/user_mock.go -package=mock_domain
-          go run go.uber.org/mock/mockgen@latest -source=domain/photo.go -destination=mocks/photo_mock.go -package=mock_domain
-          go run go.uber.org/mock/mockgen@latest -source=domain/device.go -destination=mocks/device_mock.go -package=mock_domain
+          mockgen -source=domain/user.go -destination=mocks/user_mock.go -package=mock_domain
+          mockgen -source=domain/photo.go -destination=mocks/photo_mock.go -package=mock_domain
+          mockgen -source=domain/device.go -destination=mocks/device_mock.go -package=mock_domain
 
       - name: Run Tests and Coverage
         run: |
