@@ -33,7 +33,10 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Generate Mocks
+        env:
+          GOPATH: ${{ runner.temp }}/go
         run: |
+
           mkdir -p mocks
 
           mockgen \
