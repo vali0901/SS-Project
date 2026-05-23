@@ -26,7 +26,7 @@ import (
 
 type PhotoController struct {
 	PhotoRepository domain.PhotoRepository
-	ocrClient        *gosseract.Client
+	ocrClient       *gosseract.Client
 }
 
 func InitPhotoRoutes(db *gorm.DB, ocrClient *gosseract.Client, mux *http.ServeMux) {
@@ -70,28 +70,35 @@ func (ctlr PhotoController) GetPhotos(w http.ResponseWriter, r *http.Request) {
 
 	filters := make(map[string]any)
 
-	// If user is not admin, only show their photos
 	role, _ := ctx.Value("role").(string)
+
 	if role != "admin" {
 		email, _ := ctx.Value("email").(string)
 		filters["user_email"] = email
 	} else if userEmailParam != "" && userEmailParam != "all" {
-		// Admin can filter by specific user
 		filters["user_email"] = userEmailParam
 	}
 
 	if start != "" {
 		startInt, err := strconv.ParseInt(start, 10, 64)
 		if err == nil {
+			// http.Error(w, "Invalid start timestamp", http.StatusBadRequest)
+			// return
 			filters["start_date"] = time.Unix(startInt, 0)
+
 		}
+
 	}
 
 	if end != "" {
 		endInt, err := strconv.ParseInt(end, 10, 64)
 		if err == nil {
+			// http.Error(w, "Invalid end timestamp", http.StatusBadRequest)
+			// return
 			filters["end_date"] = time.Unix(endInt, 0)
+
 		}
+
 	}
 
 	if text != "" {
@@ -115,6 +122,7 @@ func (ctlr PhotoController) GetPhotos(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+
 	json.NewEncoder(w).Encode(photos)
 }
 
@@ -201,7 +209,7 @@ func (ctlr PhotoController) UploadPhoto(w http.ResponseWriter, r *http.Request) 
 
 	// Save file locally
 	if err := utils.SaveToLocal(fileBytes, photoKey); err != nil {
-		// We already saved to DB, so this is bad. 
+		// We already saved to DB, so this is bad.
 		// In a real app we'd use a transaction or clean up.
 		fmt.Printf("Failed to save photo file: %v\n", err)
 	}
@@ -245,7 +253,7 @@ func (ctlr PhotoController) UpdatePhoto(w http.ResponseWriter, r *http.Request) 
 	update := map[string]any{
 		"medical_data": updatedPhoto.MedicalData,
 	}
-	
+
 	// If text was provided, update it too
 	if updatedPhoto.Text != "" {
 		update["text"] = updatedPhoto.Text
