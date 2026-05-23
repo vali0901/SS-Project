@@ -2,19 +2,48 @@ package ocr
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"time"
 
 	pb "mqtt-streaming-server/mqtt-streaming-server/proto/ocr"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 // Client wraps the gRPC connection and service stub
 type Client struct {
 	conn *grpc.ClientConn
 	stub pb.OCRServiceClient
+}
+
+func loadClientMTLS() credentials.TransportCredentials {
+	cert, err := tls.LoadX509KeyPair(
+		"/run/secrets/web.crt",
+		"/run/secrets/web.key",
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	caCert, err := ioutil.ReadFile("/run/secrets/ca.crt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	caPool := x509.NewCertPool()
+	caPool.AppendCertsFromPEM(caCert)
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      caPool,
+	}
+
+	return credentials.NewTLS(tlsConfig)
 }
 
 // NewClient creates a new OCR client connected to the OCR service
@@ -26,7 +55,7 @@ func NewClient(host string, port string) (*Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	conn, err := grpc.DialContext(ctx, addr, grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, addr, grpc.WithTransportCredentials(loadClientMTLS()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to OCR service at %s: %w", addr, err)
 	}

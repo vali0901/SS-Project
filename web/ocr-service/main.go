@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"time"
@@ -11,6 +14,7 @@ import (
 
 	"github.com/otiai10/gosseract/v2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -21,6 +25,32 @@ const (
 type OCRServer struct {
 	pb.UnimplementedOCRServiceServer
 	ocrClient *gosseract.Client
+}
+
+func loadMTLS() credentials.TransportCredentials {
+	cert, err := tls.LoadX509KeyPair(
+		"/run/secrets/ocr.crt",
+		"/run/secrets/ocr.key",
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	caCert, err := ioutil.ReadFile("/run/secrets/ca.crt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	caPool := x509.NewCertPool()
+	caPool.AppendCertsFromPEM(caCert)
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientCAs:    caPool,
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+	}
+
+	return credentials.NewTLS(tlsConfig)
 }
 
 // NewOCRServer creates and initializes a new OCRServer
@@ -95,7 +125,10 @@ func main() {
 	defer ocrServer.Close()
 
 	// Create gRPC server
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.Creds(loadMTLS()),
+	)
+
 	pb.RegisterOCRServiceServer(s, ocrServer)
 
 	log.Printf("OCR service listening on %s", port)

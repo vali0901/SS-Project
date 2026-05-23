@@ -75,6 +75,8 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    volumes:
+    - ./secrets:/run/secrets:ro
 
   postgres-db:
     container_name: postgres-db
@@ -109,3 +111,7 @@ secrets:
     file: ./secrets/server.crt
   server.key:
     file: ./secrets/server.key
+  ocr.crt:
+    file: ./secrets/ocr.crt
+  ocr.key:
+    file: ./secrets/ocr.key
