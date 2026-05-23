@@ -31,6 +31,8 @@
     <string name="main_logs_auto_send_on_entry">Auto send: ON (%1$ds interval)</string>
     <string name="main_logs_image_capture_requested_entry">Image capture requested…</string>
     <string name="main_logs_image_sent_entry">Image sent to broker (%1$.2f KB)</string>
+    <string name="main_logs_image_saved_offline_entry">Broker unavailable; image saved locally (%1$d queued)</string>
+    <string name="main_logs_offline_image_sent_entry">Offline image sent (%1$d queued)</string>
     <string name="main_logs_image_capture_error_entry">Error processing image (check detailed logs)</string>
     <string name="main_logs_command_received_entry">Command received: %1$s</string>
     <string name="main_logs_command_capture_ignored_entry">Command ignored (Live mode active)</string>
