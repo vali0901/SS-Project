@@ -22,10 +22,14 @@ jobs:
           cache: true
           cache-dependency-path: go.sum
 
+      - name: Download dependencies
+        run: go mod download
+        
       - name: Install Tesseract OCR
         run: |
           sudo apt-get update
           sudo apt-get install -y libleptonica-dev libtesseract-dev tesseract-ocr
+
 
       - name: Install Mockgen
         run: |
@@ -33,26 +37,24 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Generate Mocks
-        env:
-          GOPATH: ${{ runner.temp }}/go
+ 
         run: |
-
           mkdir -p mocks
 
           mockgen \
-            -source=domain/user.go \
+            -package=mock_domain \
             -destination=mocks/user_mock.go \
-            -package=mock_domain
+            mqtt-streaming-server/domain UserRepository
 
           mockgen \
-            -source=domain/photo.go \
+            -package=mock_domain \
             -destination=mocks/photo_mock.go \
-            -package=mock_domain
+            mqtt-streaming-server/domain PhotoRepository
 
           mockgen \
-            -source=domain/device.go \
+            -package=mock_domain \
             -destination=mocks/device_mock.go \
-            -package=mock_domain
+            mqtt-streaming-server/domain DeviceRepository
       - name: Run Tests and Coverage
         run: |
           go test -covermode=atomic -coverprofile=coverage.out ./...
