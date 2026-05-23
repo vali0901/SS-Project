@@ -12,7 +12,6 @@ import (
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/google/uuid"
-	"github.com/otiai10/gosseract/v2"
 	"gorm.io/gorm"
 
 	"mqtt-streaming-server/domain"
@@ -24,10 +23,10 @@ type BrokerHandler struct {
 	photoRepository  domain.PhotoRepository
 	deviceRepository domain.DeviceRepository
 	userRepository   domain.UserRepository
-	ocrClient        *gosseract.Client
+	ocrClient        OCRClientInterface
 }
 
-func NewBrokerHandler(db *gorm.DB, ocrClient *gosseract.Client) BrokerHandler {
+func NewBrokerHandler(db *gorm.DB, ocrClient OCRClientInterface) BrokerHandler {
 	return BrokerHandler{
 		photoRepository:  repository.NewPhotoRepository(db),
 		deviceRepository: repository.NewDeviceRepository(db),
@@ -306,9 +305,8 @@ func (b BrokerHandler) DisconnectDevice(_ mqtt.Client, msg mqtt.Message) {
 }
 
 func (b BrokerHandler) extractTextFromImage(imageData []byte) (string, error) {
-	// Use the OCR client to extract text from the image
-	b.ocrClient.SetImageFromBytes(imageData)
-	text, err := b.ocrClient.Text()
+	// Call the remote OCR service to extract text from the image
+	text, err := b.ocrClient.ExtractText(imageData)
 	if err != nil {
 		return "", fmt.Errorf("failed to extract text from image: %v", err)
 	}
