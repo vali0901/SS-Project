@@ -14,7 +14,13 @@ type MedicalInsights struct {
 	LastMonthCount             int `json:"last_month_count"`
 	ExpiringNextMonthPeople    int `json:"expiring_next_month_people"`
 	ExpiringNextMonthNames     []string `json:"expiring_next_month_names"`
+	ExpiringNextMonthEntries   []ExpiringPerson `json:"expiring_next_month_entries"`
 	TotalMedicinaMunciiInDocs  int `json:"total_medicina_muncii_in_documents"`
+}
+
+type ExpiringPerson struct {
+	Name           string `json:"name"`
+	ExpirationDate string `json:"expiration_date"`
 }
 
 func (ctlr PhotoController) GetMedicalInsights(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +57,7 @@ func calculateMedicalInsights(photos []*domain.Photo) MedicalInsights {
 	nextNextMonthStart := nextMonthStart.AddDate(0, 1, 0)
 
 	insights := MedicalInsights{}
-	expiringPeople := make(map[string]string)
+	expiringPeople := make(map[string]ExpiringPerson)
 
 	for _, photo := range photos {
 		if !isMedicinaMunciiDocument(photo) {
@@ -72,17 +78,31 @@ func calculateMedicalInsights(photos []*domain.Photo) MedicalInsights {
 		expiry = expiry.UTC()
 		if !expiry.Before(nextMonthStart) && expiry.Before(nextNextMonthStart) {
 			key := personIdentityKey(photo)
-			if _, exists := expiringPeople[key]; !exists {
-				expiringPeople[key] = personDisplayName(photo)
+			entry := ExpiringPerson{
+				Name:           personDisplayName(photo),
+				ExpirationDate: expiry.Format("2006-01-02"),
+			}
+
+			existing, exists := expiringPeople[key]
+			if !exists || entry.ExpirationDate < existing.ExpirationDate {
+				expiringPeople[key] = entry
 			}
 		}
 	}
 
 	insights.ExpiringNextMonthPeople = len(expiringPeople)
+	insights.ExpiringNextMonthEntries = make([]ExpiringPerson, 0, len(expiringPeople))
 	insights.ExpiringNextMonthNames = make([]string, 0, len(expiringPeople))
-	for _, name := range expiringPeople {
-		insights.ExpiringNextMonthNames = append(insights.ExpiringNextMonthNames, name)
+	for _, person := range expiringPeople {
+		insights.ExpiringNextMonthEntries = append(insights.ExpiringNextMonthEntries, person)
+		insights.ExpiringNextMonthNames = append(insights.ExpiringNextMonthNames, person.Name)
 	}
+	sort.Slice(insights.ExpiringNextMonthEntries, func(i, j int) bool {
+		if insights.ExpiringNextMonthEntries[i].ExpirationDate == insights.ExpiringNextMonthEntries[j].ExpirationDate {
+			return insights.ExpiringNextMonthEntries[i].Name < insights.ExpiringNextMonthEntries[j].Name
+		}
+		return insights.ExpiringNextMonthEntries[i].ExpirationDate < insights.ExpiringNextMonthEntries[j].ExpirationDate
+	})
 	sort.Strings(insights.ExpiringNextMonthNames)
 	return insights
 }

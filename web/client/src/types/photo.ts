@@ -61,5 +61,11 @@ export interface MedicalInsights {
   last_month_count: number;
   expiring_next_month_people: number;
   expiring_next_month_names: string[];
+  expiring_next_month_entries: ExpiringPerson[];
   total_medicina_muncii_in_documents: number;
+}
+
+export interface ExpiringPerson {
+  name: string;
+  expiration_date: string;
 }

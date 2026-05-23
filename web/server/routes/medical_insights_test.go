@@ -81,4 +81,13 @@ func TestPhotoController_GetMedicalInsights(t *testing.T) {
 	if len(resp.ExpiringNextMonthNames) != 1 || resp.ExpiringNextMonthNames[0] != "Maria Popescu" {
 		t.Fatalf("expected expiring name list to contain Maria Popescu, got %+v", resp.ExpiringNextMonthNames)
 	}
+	if len(resp.ExpiringNextMonthEntries) != 1 {
+		t.Fatalf("expected one expiring entry, got %+v", resp.ExpiringNextMonthEntries)
+	}
+	if resp.ExpiringNextMonthEntries[0].Name != "Maria Popescu" {
+		t.Fatalf("expected expiring entry name to be Maria Popescu, got %+v", resp.ExpiringNextMonthEntries[0].Name)
+	}
+	if resp.ExpiringNextMonthEntries[0].ExpirationDate == "" {
+		t.Fatalf("expected expiration date in expiring entry, got empty")
+	}
 }

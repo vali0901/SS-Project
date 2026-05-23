@@ -186,6 +186,14 @@ const StatisticsPage: React.FC = () => {
     const controlData = getControlStats();
     const avizData = getAvizStats();
     const expiringNames = medicalInsights?.expiring_next_month_names ?? [];
+    const expiringEntries = medicalInsights?.expiring_next_month_entries ?? [];
+
+    const formatExpiryDate = (dateValue: string) => {
+        if (!dateValue) return 'Unknown date';
+        const parsed = new Date(dateValue);
+        if (Number.isNaN(parsed.getTime())) return dateValue;
+        return parsed.toLocaleDateString('en-GB');
+    };
 
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
@@ -258,8 +266,10 @@ const StatisticsPage: React.FC = () => {
                             <div className="text-sm font-semibold text-gray-800 mb-2">People affected:</div>
                             <div className="max-h-48 overflow-y-auto rounded border border-red-100 bg-red-50 px-3 py-2">
                                 <ul className="list-disc pl-5 text-sm text-red-900 space-y-1">
-                                    {(medicalInsights?.expiring_next_month_names ?? []).map((name) => (
-                                        <li key={name}>{name}</li>
+                                    {expiringEntries.map((entry) => (
+                                        <li key={`${entry.name}-${entry.expiration_date}`}>
+                                            {entry.name} - {formatExpiryDate(entry.expiration_date)}
+                                        </li>
                                     ))}
                                 </ul>
                             </div>
