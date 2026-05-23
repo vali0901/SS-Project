@@ -110,7 +110,7 @@ func (ctlr PhotoController) GetPhotos(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, photo := range photos {
-		keyName := fmt.Sprintf("photos/%d.%s", photo.Timestamp.Unix(), photo.ImageType)
+		keyName := utils.PhotoStorageKey(photo.ID)
 		photo.PresignedURL = utils.GetLocalURL(keyName)
 	}
 
@@ -190,6 +190,7 @@ func (ctlr PhotoController) UploadPhoto(w http.ResponseWriter, r *http.Request) 
 	if medicalData != nil {
 		photo.MedicalData = *medicalData
 	}
+	photoKey := utils.PhotoStorageKey(photo.ID)
 
 	// Save to DB
 	err = ctlr.PhotoRepository.Save(ctx, photo)
@@ -199,8 +200,7 @@ func (ctlr PhotoController) UploadPhoto(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Save file locally
-	keyName := fmt.Sprintf("photos/%d.%s", timestamp.Unix(), imageType)
-	if err := utils.SaveToLocal(fileBytes, keyName); err != nil {
+	if err := utils.SaveToLocal(fileBytes, photoKey); err != nil {
 		// We already saved to DB, so this is bad. 
 		// In a real app we'd use a transaction or clean up.
 		fmt.Printf("Failed to save photo file: %v\n", err)
@@ -287,6 +287,7 @@ func (ctlr PhotoController) DeletePhoto(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Unauthorized", http.StatusForbidden)
 		return
 	}
+	fileName := utils.PhotoStorageKey(photo.ID)
 
 	// Delete from database
 	err = ctlr.PhotoRepository.Delete(ctx, photoID)
@@ -297,8 +298,7 @@ func (ctlr PhotoController) DeletePhoto(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Delete the image file from local storage
-	fileName := fmt.Sprintf("uploads/photos/%d.%s", photo.Timestamp.Unix(), photo.ImageType)
-	if err := os.Remove(fileName); err != nil {
+	if err := os.Remove(filepath.Join("uploads", fileName)); err != nil {
 		fmt.Printf("Warning: Could not delete file %s: %v\n", fileName, err)
 		// Don't fail the request - the DB record is already deleted
 	}

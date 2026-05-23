@@ -7,6 +7,14 @@ import cv2
 import numpy as np
 from jinja2 import Environment, FileSystemLoader
 from playwright.sync_api import sync_playwright
+import uuid
+import psycopg
+
+# Database Connection String
+DB_CONN = "postgresql://admin:supersecret@localhost:5432/mqtt_streaming"
+OUT_DIR = "../uploads/"
+PHOTO_DIR = OUT_DIR + 'photos/'
+VALIDATION_DIR = OUT_DIR + 'validation/'
 
 # --- Localization Seed Tables ---
 NAMES = ["Ion", "Maria", "Andrei", "Elena", "Radu", "Ana", "George", "Ioana", "Mihai", "Cristina", "Alexandru", "Gabriela", "Florin", "Daniela", "Vlad"]
@@ -25,7 +33,7 @@ def wrap_field(value):
     """Wraps values directly into your generic ExtractedField application database layout structures."""
     return {
         "value": value,
-        "confidence": round(random.uniform(0.85, 1.0), 2),
+        "confidence": round(random.uniform(0.95, 1.0), 2),
         "is_edited": False,
         "is_validated": random.choice([True, False])
     }
@@ -52,6 +60,13 @@ def generate_random_photo():
     # 4. Generate Phone Extensions
     tel_clinic = f"+40 21 {random.randint(400, 409)} {random.randint(10, 99)} {random.randint(10, 99)}"
     tel_company = f"07{random.randint(22, 76)}{random.randint(100, 999)}{random.randint(100, 999)}"
+
+    meta = {
+        "timestamp": timestamp,
+        "image_type": "jpeg",
+        "device_id": f"device-{random.randint(1, 5)}",
+        "ocr_text": f"Fake OCR for {nume} {prenume}"
+    }
 
     # 5. Populate Complete Structured Model Map Matching every Go Struct Parameter
     model_map = {
@@ -102,7 +117,7 @@ def generate_random_photo():
         "display_data": time_base.strftime("%d/%m/%Y"),
         "display_data_urm": time_expiry.strftime("%d/%m/%Y")
     }
-    return model_map
+    return meta, model_map
 
 def apply_image_degradation(image_path):
     """Processes images with pure OpenCV execution loops to mimic scanner imperfections."""
@@ -138,9 +153,50 @@ def apply_image_degradation(image_path):
 
     cv2.imwrite(image_path, img)
 
+def insert_db(id, meta, medical_data):
+    try:
+        # Establish connection to PostgreSQL
+        with psycopg.connect(DB_CONN) as conn:
+            with conn.cursor() as cur:
+                
+                # Check current count
+                cur.execute("SELECT COUNT(*) FROM photos;")
+                current_count = cur.fetchone()[0]
+                print(f"Current document count: {current_count}")
+            
+                    
+                # Prepare SQL Insert Statement
+                query = """
+                    INSERT INTO photos (id, timestamp, image_type, device_id, user_email, text, medical_data)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s);
+                """
+                
+                # Execute with values. psycopg automatically converts dict to JSONB string
+                cur.execute(query, (
+                    id,
+                    meta["timestamp"],
+                    meta["image_type"],
+                    meta["device_id"],
+                    "test@mail.com",
+                    meta["ocr_text"],
+                    json.dumps(medical_data)
+                ))
+                
+                # Commit explicitly if your connection configuration needs it
+                conn.commit()
+                
+                # Check new count
+                cur.execute("SELECT COUNT(*) FROM photos;")
+                new_count = cur.fetchone()[0]
+                print(f"New document count: {new_count}")
+                
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        print("Ensure PostgreSQL is running and credentials match.")
+
 def main():
     parser = argparse.ArgumentParser(description="Generate comprehensive dataset matching Go structs completely.")
-    parser.add_argument("--out_dir", type=str, required=True, help="Target destination directory.")
+    parser.add_argument("--insert-db", action="store_true", help="also insert into db")
     parser.add_argument("--count", type=int, default=5, help="Number of data iterations.")
     parser.add_argument(
         "--obs_portrait",
@@ -149,19 +205,20 @@ def main():
     )
     args = parser.parse_args()
 
-    os.makedirs(args.out_dir, exist_ok=True)
+    os.makedirs(PHOTO_DIR, exist_ok=True)
+    os.makedirs(VALIDATION_DIR, exist_ok=True)
     
     env = Environment(loader=FileSystemLoader("templates"))
     layouts = ["layout_1.html", "layout_2.html", "layout_3.html"]
     fonts = ["Arial", "Courier New", "Times New Roman", "Georgia", "Verdana"]
 
-    print(f"🚀 Mapping all db fields to Romanian forms. Compiling {args.count} elements into '{args.out_dir}'...")
+    print(f"🚀 Mapping all db fields to Romanian forms. Compiling {args.count} elements into '{OUT_DIR}'...")
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
         
         for idx in range(1, args.count + 1):
-            record_data = generate_random_photo()
+            meta, record_data = generate_random_photo()
             selected_layout = random.choice(layouts)
             selected_font = random.choice(fonts)
             
@@ -179,9 +236,9 @@ def main():
             page.set_content(html_content)
             page.wait_for_timeout(150)  # Safe execution render block buffer
             
-            base_name = f"medical_form_full_{idx:04d}"
-            img_path = os.path.join(args.out_dir, f"{base_name}.jpg")
-            json_path = os.path.join(args.out_dir, f"{base_name}.json")
+            id = str(uuid.uuid4())
+            img_path = os.path.join(PHOTO_DIR, f"{id}.jpg")
+            json_path = os.path.join(VALIDATION_DIR, f"{id}.json")
             
             page.screenshot(path=img_path, type="jpeg", quality=100)
             page.close()
@@ -196,7 +253,10 @@ def main():
             # Save strict Go JSON data models
             with open(json_path, "w", encoding="utf-8") as file_out:
                 json.dump(record_data, file_out, indent=4, ensure_ascii=False)
-                
+
+            if args.insert_db:
+                insert_db(id, meta, record_data)
+
         browser.close()
         
     print(f"✨ Generation finalized. Every single struct field is visually represented in Romanian!")

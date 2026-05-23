@@ -1,0 +1,164 @@
+{
+    "unitate_medicala": {
+        "value": "Clinica MedLife București",
+        "confidence": 0.92,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "adresa_unitate_medicala": {
+        "value": "Splaiul Independenței, nr. 21, Sector 4",
+        "confidence": 0.88,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "telefon_unitate_medicala": {
+        "value": "+40 21 403 16 15",
+        "confidence": 0.89,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "numar_fisa": {
+        "value": "999623",
+        "confidence": 0.86,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "societate_unitate": {
+        "value": "Distribuție Muntenia SRL",
+        "confidence": 0.88,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "adresa_angajator": {
+        "value": "Bulevardul Ion Mihalache, nr. 315, București",
+        "confidence": 0.86,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "telefon_angajator": {
+        "value": "0761815433",
+        "confidence": 0.91,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "nume": {
+        "value": "Dumitru",
+        "confidence": 1.0,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "prenume": {
+        "value": "Alexandru",
+        "confidence": 0.99,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "cnp": {
+        "value": "5711114575876",
+        "confidence": 0.86,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "profesie_functie": {
+        "value": "ȘOFER",
+        "confidence": 0.88,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "loc_de_munca": {
+        "value": "Departamentul Administrativ, București",
+        "confidence": 0.92,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "tip_control": {
+        "value": "Control Adaptare",
+        "confidence": 1.0,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "control_angajare": {
+        "value": false,
+        "confidence": 0.88,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "control_periodic": {
+        "value": false,
+        "confidence": 0.97,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "control_adaptare": {
+        "value": true,
+        "confidence": 0.9,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "control_reluare": {
+        "value": false,
+        "confidence": 0.94,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "control_supraveghere": {
+        "value": false,
+        "confidence": 0.98,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "control_alte": {
+        "value": false,
+        "confidence": 0.89,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "aviz_medical": {
+        "value": "APT",
+        "confidence": 0.87,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "aviz_apt": {
+        "value": true,
+        "confidence": 0.99,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "aviz_apt_conditionat": {
+        "value": false,
+        "confidence": 0.89,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "aviz_inapt_temporar": {
+        "value": false,
+        "confidence": 0.87,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "aviz_inapt": {
+        "value": false,
+        "confidence": 0.95,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "recomandari": {
+        "value": "Nicio recomandare restrictivă. Apt pentru lucrul curent.",
+        "confidence": 0.9,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "data": {
+        "value": "2026-05-11T09:00:00Z",
+        "confidence": 0.9,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "data_urm_examinari": {
+        "value": "2027-05-11T09:00:00Z",
+        "confidence": 0.92,
+        "is_edited": false,
+        "is_validated": true
+    }
+}

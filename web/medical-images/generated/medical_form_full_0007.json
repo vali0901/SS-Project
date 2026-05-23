@@ -1,0 +1,164 @@
+{
+    "unitate_medicala": {
+        "value": "Centrul Medical Arcadia",
+        "confidence": 0.99,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "adresa_unitate_medicala": {
+        "value": "Strada Mihai Eminescu, nr. 11, Sector 1",
+        "confidence": 0.97,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "telefon_unitate_medicala": {
+        "value": "+40 21 404 71 73",
+        "confidence": 0.97,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "numar_fisa": {
+        "value": "384643",
+        "confidence": 0.98,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "societate_unitate": {
+        "value": "Tehnologii Digitale SA",
+        "confidence": 0.96,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "adresa_angajator": {
+        "value": "Splaiul Independenței, nr. 131, București",
+        "confidence": 0.85,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "telefon_angajator": {
+        "value": "0759302748",
+        "confidence": 0.86,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "nume": {
+        "value": "Toma",
+        "confidence": 0.91,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "prenume": {
+        "value": "Maria",
+        "confidence": 0.86,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "cnp": {
+        "value": "5950308732261",
+        "confidence": 0.89,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "profesie_functie": {
+        "value": "STUDENT",
+        "confidence": 0.87,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "loc_de_munca": {
+        "value": "Departamentul Administrativ, București",
+        "confidence": 0.94,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "tip_control": {
+        "value": "Control Adaptare",
+        "confidence": 0.89,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "control_angajare": {
+        "value": false,
+        "confidence": 0.95,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "control_periodic": {
+        "value": false,
+        "confidence": 0.89,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "control_adaptare": {
+        "value": true,
+        "confidence": 0.86,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "control_reluare": {
+        "value": false,
+        "confidence": 0.86,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "control_supraveghere": {
+        "value": false,
+        "confidence": 1.0,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "control_alte": {
+        "value": false,
+        "confidence": 0.99,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "aviz_medical": {
+        "value": "APT",
+        "confidence": 0.94,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "aviz_apt": {
+        "value": true,
+        "confidence": 0.87,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "aviz_apt_conditionat": {
+        "value": false,
+        "confidence": 0.89,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "aviz_inapt_temporar": {
+        "value": false,
+        "confidence": 0.99,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "aviz_inapt": {
+        "value": false,
+        "confidence": 0.95,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "recomandari": {
+        "value": "Nicio recomandare restrictivă. Apt pentru lucrul curent.",
+        "confidence": 0.88,
+        "is_edited": false,
+        "is_validated": true
+    },
+    "data": {
+        "value": "2026-05-14T09:00:00Z",
+        "confidence": 0.93,
+        "is_edited": false,
+        "is_validated": false
+    },
+    "data_urm_examinari": {
+        "value": "2027-05-14T09:00:00Z",
+        "confidence": 0.94,
+        "is_edited": false,
+        "is_validated": false
+    }
+}
