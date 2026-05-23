@@ -1,11 +1,11 @@
 name: Mobile CI/CD
 
-on: workflow_dispatch
-  # push:
-  #   branches: [ "main" ]
-  #   tags: [ "v*" ]
-  # pull_request:
-  #   branches: [ "main" ]
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   unit_tests:
@@ -30,6 +30,12 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+
+      - name: Generate Android mTLS resources
+        working-directory: web
+        run: |
+          bash scripts/gen-ca.sh
+          bash scripts/gen-android-stores.sh
 
       - name: Run Android Lint
         run: ./gradlew lint
