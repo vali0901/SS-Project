@@ -21,3 +21,14 @@
     animation: scaleIn 0.2s ease-out forwards;
   }
 }
+
+/* Dark mode base styles */
+@layer base {
+  html {
+    @apply bg-white text-gray-900 transition-colors duration-300;
+  }
+
+  html.dark {
+    @apply bg-slate-950 text-gray-100;
+  }
+}
