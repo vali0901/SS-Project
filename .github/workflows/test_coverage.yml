@@ -27,9 +27,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libleptonica-dev libtesseract-dev tesseract-ocr
 
-      - name: Set GOPATH
-        run: echo "GOPATH=$HOME/go" >> $GITHUB_ENV
-        
       - name: Install Mockgen
         run: |
           go install go.uber.org/mock/mockgen@latest
@@ -37,9 +34,22 @@ jobs:
 
       - name: Generate Mocks
         run: |
-            mockgen -destination=mocks/user_mock.go -package=mock_domain mqtt-streaming-server/domain UserRepository
-            mockgen -destination=mocks/photo_mock.go -package=mock_domain mqtt-streaming-server/domain PhotoRepository
-            mockgen -destination=mocks/device_mock.go -package=mock_domain mqtt-streaming-server/domain DeviceRepository
+          mkdir -p mocks
+
+          mockgen \
+            -source=domain/user.go \
+            -destination=mocks/user_mock.go \
+            -package=mock_domain
+
+          mockgen \
+            -source=domain/photo.go \
+            -destination=mocks/photo_mock.go \
+            -package=mock_domain
+
+          mockgen \
+            -source=domain/device.go \
+            -destination=mocks/device_mock.go \
+            -package=mock_domain
       - name: Run Tests and Coverage
         run: |
           go test -covermode=atomic -coverprofile=coverage.out ./...
