@@ -18,6 +18,9 @@ STR_CLINICS = ["Clinica MedLife București", "Spitalul Regina Maria", "Sanador V
 STR_COMPANIES = ["Logistica Română SRL", "Tehnologii Digitale SA", "UNIVERSITATEA NAȚIONALĂ DE ȘTIINȚĂ ȘI TEHNOLOGIE POLITEHNICA BUCUREȘTI", "Distribuție Muntenia SRL", "Compania Globală SRL"]
 STR_DEPARTMENTS = ["FACULTATEA DE AUTOMATICA SI CALCULATOARE", "Departamentul Administrativ", "Secția Logistică și Transport", "Direcția Resurse Umane"]
 
+OBS_CANVAS_WIDTH = 1080
+OBS_CANVAS_HEIGHT = 1920
+
 def wrap_field(value):
     """Wraps values directly into your generic ExtractedField application database layout structures."""
     return {
@@ -139,6 +142,11 @@ def main():
     parser = argparse.ArgumentParser(description="Generate comprehensive dataset matching Go structs completely.")
     parser.add_argument("--out_dir", type=str, required=True, help="Target destination directory.")
     parser.add_argument("--count", type=int, default=5, help="Number of data iterations.")
+    parser.add_argument(
+        "--obs_portrait",
+        action="store_true",
+        help="Render generated JPEGs directly at 1080x1920 for OBS virtual camera input."
+    )
     args = parser.parse_args()
 
     os.makedirs(args.out_dir, exist_ok=True)
@@ -161,8 +169,11 @@ def main():
             template = env.get_template(selected_layout)
             html_content = template.render(d=record_data, font=selected_font)
             
-            # Match landscape viewport rules specifically for the dual-page Fișă de Aptitudine layout
-            v_width, v_height = (1250, 850) if selected_layout == "layout_2.html" else (850, 1150)
+            if args.obs_portrait:
+                v_width, v_height = OBS_CANVAS_WIDTH, OBS_CANVAS_HEIGHT
+            else:
+                # Match landscape viewport rules specifically for the dual-page Fișă de Aptitudine layout
+                v_width, v_height = (1250, 850) if selected_layout == "layout_2.html" else (850, 1150)
             
             page = browser.new_page(viewport={"width": v_width, "height": v_height})
             page.set_content(html_content)
