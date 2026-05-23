@@ -40,12 +40,12 @@ The project follows a microservices-inspired architecture containerized with Doc
 
 ```mermaid
 graph TD
-    A[Mobile App] -- mTLS / MQTT --> B(Mosquitto Broker)
-    B -- mTLS --> C[Go Backend Server]
-    C -- gRPC / mTLS --> D[OCR Service]
-    C -- SQL --> E[(PostgreSQL)]
-    F[React Web Dashboard] -- HTTP / JWT --> C
-    G[AI Governance Engine] -- Audit / RBAC --> H[Project Workspace]
+    A[Mobile App] -- "mTLS / MQTT" --> B(Mosquitto Broker)
+    B -- "mTLS" --> C[Go Backend Server]
+    C -- "gRPC / mTLS" --> D[OCR Service]
+    C -- "SQL" --> E[(PostgreSQL)]
+    F[React Web Dashboard] -- "HTTP / JWT" --> C
+    G[AI Governance Engine] -- "Audit / RBAC" --> H[Project Workspace]
 ```
 
 ---
