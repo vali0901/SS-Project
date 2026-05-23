@@ -1,0 +1,53 @@
+name: Update SBOM README
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/update-sbom-readme.yml
+      - web/scripts/update-sbom-readme.sh
+      - web/server/go.mod
+      - web/server/go.sum
+      - web/ocr-service/go.mod
+      - web/ocr-service/go.sum
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-sbom-readme:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache-dependency-path: |
+            web/server/go.sum
+            web/ocr-service/go.sum
+
+      - name: Generate CycloneDX SBOM files and update README
+        run: |
+          chmod +x web/scripts/update-sbom-readme.sh
+          ./web/scripts/update-sbom-readme.sh
+
+      - name: Commit updated SBOM artifacts
+        run: |
+          if git diff --quiet -- README.md web/server/sbom.cdx.json web/ocr-service/sbom.cdx.json; then
+            echo "No SBOM changes to commit"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md web/server/sbom.cdx.json web/ocr-service/sbom.cdx.json
+          git commit -m "chore: update SBOM snapshot"
+          git push
