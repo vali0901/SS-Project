@@ -13,6 +13,8 @@ permissions:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    
+    # Acest default se aplică doar dacă nu specificăm altfel la nivel de pas
     defaults:
       run:
         working-directory: web
@@ -21,7 +23,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
  
-      # Go backend
+      # ==========================================
+      # 1. GO BACKEND
+      # ==========================================
       - name: Install system dependencies (tesseract + leptonica)
         run: |
           sudo apt-get update
@@ -30,16 +34,42 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          go-version: "1.25" # Actualizat la 1.25 pentru a potrivi cu go.mod
           cache-dependency-path: web/server/go.sum
+
+      - name: Download Go dependencies
+        working-directory: web/server
+        run: go mod download
+
+      - name: Install Mockgen
+        run: |
+          go install go.uber.org/mock/mockgen@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Generate Mocks
+        working-directory: web/server
+        run: |
+          mkdir -p mocks
+
+          mockgen -package=mock_domain -destination=mocks/user_mock.go mqtt-streaming-server/domain UserRepository
+          mockgen -package=mock_domain -destination=mocks/photo_mock.go mqtt-streaming-server/domain PhotoRepository
+          mockgen -package=mock_domain -destination=mocks/device_mock.go mqtt-streaming-server/domain DeviceRepository
 
       - name: Go build
         working-directory: web/server
         run: go build ./...
 
-      - name: Go test
+      - name: Go test and Coverage
         working-directory: web/server
-        run: go test ./... -v -coverprofile=coverage.out 2>&1 | tee test-results.txt
+        run: |
+          # Rulăm testele cu verbose (-v) și salvare în fișier text pentru primul artifact
+          go test -covermode=atomic -coverprofile=coverage.out ./... -v 2>&1 | tee test-results.txt
+          
+          # Curățăm mock-urile din coverage pentru al doilea artifact
+          grep -v 'mocks/' coverage.out > coverage_clean.out
+          
+          # Afișăm totalul în consolă
+          go tool cover -func=coverage_clean.out
 
       - name: Upload Go test results
         if: always()
@@ -53,9 +83,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: go-coverage
-          path: web/server/coverage.out
+          path: web/server/coverage_clean.out
  
-      # React/Vite frontend
+      # ==========================================
+      # 2. REACT/VITE FRONTEND
+      # ==========================================
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -75,7 +107,9 @@ jobs:
         working-directory: web/client
         run: yarn build
  
-      # Docker build
+      # ==========================================
+      # 3. DOCKER BUILD
+      # ==========================================
       - name: Docker build API image
         working-directory: web/server
         run: docker build -t ss-web-api:test .
