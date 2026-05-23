@@ -16,6 +16,10 @@ type Photo struct {
 
 	// Medical Data Fields - Stored as a single JSONB column
 	MedicalData MedicalData `json:"medical_data" gorm:"column:medical_data;type:jsonb;serializer:json"`
+
+	// DB ONLY
+	TextEnc        []byte `gorm:"column:text_enc"`
+	MedicalDataEnc []byte `gorm:"column:medical_data_enc"`
 }
 
 type PhotoRepository interface {

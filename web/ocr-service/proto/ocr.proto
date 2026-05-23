@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package ocr;
+
+option go_package = "ocr-service/proto";
+
+service OCRService {
+  // ExtractText extracts text from an image using Tesseract OCR
+  rpc ExtractText(OCRRequest) returns (OCRResponse);
+}
+
+message OCRRequest {
+  // Image data as bytes (PNG, JPEG, etc.)
+  bytes image_data = 1;
+}
+
+message OCRResponse {
+  // Extracted text from the image
+  string text = 1;
+  // Error message if extraction failed
+  string error = 2;
+  // Processing time in milliseconds
+  int64 processing_time_ms = 3;
+}

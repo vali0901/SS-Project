@@ -1,5 +1,5 @@
 # Stage 1: Build environment
-FROM golang:alpine@sha256:ef18ee7117463ac1055f5a370ed18b8750f01589f13ea0b48642f5792b234044 AS builder
+FROM golang:1.25-alpine AS builder
 
 # 1. Install build-time dependencies (compilers and dev headers)
 # These change rarely and should be at the top

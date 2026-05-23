@@ -53,7 +53,7 @@ if [ ! -f "server.key" ] || [ ! -f "server.crt" ] || [ "$SERVER_CERT_NEEDS_REGEN
     openssl genrsa -out server.key 2048
     openssl req -new -key server.key -out server.csr \
         -subj "/C=RO/ST=Romania/L=Bucharest/O=SS-Web/OU=Broker/CN=broker"
-    
+
     # Creare fișier temporar de configurare pentru extensia SAN
     # Adaugă aici IP-ul sau DNS-ul real dacă nu rulezi pe localhost (ex: DNS.2 = broker.local)
     cat <<EOF > server_ext.cnf
@@ -69,7 +69,7 @@ EOF
     # Semnarea certificatului folosind fișierul de extensie
     openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key \
         -CAcreateserial -out server.crt -extfile server_ext.cnf
-    
+
     # Curățare fișiere temporare
     rm -f server.csr server_ext.cnf
 else
@@ -84,7 +84,7 @@ if [ ! -f "web.key" ] || [ ! -f "web.crt" ]; then
     openssl genrsa -out web.key 2048
     openssl req -new -key web.key -out web.csr \
         -subj "/C=RO/ST=Romania/L=Bucharest/O=SS-Web/OU=WebClient/CN=web"
-    
+
     # Creare fișier temporar de configurare pentru SAN client
     cat <<EOF > web_ext.cnf
 subjectAltName = @alt_names
@@ -98,7 +98,7 @@ EOF
     # Semnarea certificatului client
     openssl x509 -req -days 365 -in web.csr -CA ca.crt -CAkey ca.key \
         -CAcreateserial -out web.crt -extfile web_ext.cnf
-    
+
     # Curățare fișiere temporare
     rm -f web.csr web_ext.cnf
 else
@@ -106,10 +106,53 @@ else
 fi
 
 # ---------------------------------------------------------------------
-# 4. Verificarea Certificatelor Generate
+# 4. Generarea Certificatului pentru OCR (Cu SAN)
+# ---------------------------------------------------------------------
+if [ ! -f "ocr.key" ] || [ ! -f "ocr.crt" ]; then
+    echo "[+] Generare Certificat OCR (cu SAN)..."
+    openssl genrsa -out ocr.key 2048
+    openssl req -new -key ocr.key -out ocr.csr \
+        -subj "/C=RO/ST=Romania/L=Bucharest/O=SS-Web/OU=OCR/CN=ocr-service"
+
+    # Creare fișier temporar de configurare pentru extensia SAN
+    # Adaugă aici IP-ul sau DNS-ul real dacă nu rulezi pe localhost (ex: DNS.2 = broker.local)
+    cat <<EOF > ocr_ext.cnf
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = ocr-service
+DNS.2 = localhost
+IP.1 = 127.0.0.1
+EOF
+
+    # Semnarea certificatului folosind fișierul de extensie
+    openssl x509 -req -days 365 -in ocr.csr -CA ca.crt -CAkey ca.key \
+        -CAcreateserial -out ocr.crt -extfile ocr_ext.cnf
+
+    # Curățare fișiere temporare
+    rm -f ocr.csr ocr_ext.cnf
+else
+    echo "[~] Certificatul de OCR există deja."
+fi
+
+# ---------------------------------------------------------------------
+# 5. Verificarea Certificatelor Generate
 # ---------------------------------------------------------------------
 echo -e "\n--- Verificare Certificate ---"
 openssl verify -CAfile ca.crt server.crt
 openssl verify -CAfile ca.crt web.crt
+openssl verify -CAfile ca.crt ocr.crt
+
+# pt ocr
+chmod 444 *.crt
+chmod 444 *.key
+
+# generare key pt criptare in db
+if [ ! -f "encryption.key" ]; then
+    echo "[+] Generare cheie de criptare pentru baza de date..."
+    openssl rand -out encryption.key 32
+else
+    echo "[~] Cheia de criptare există deja."
+fi
 
 echo "[SUCCES] Procesul a fost finalizat cu succes!"
