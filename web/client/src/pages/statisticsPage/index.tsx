@@ -17,8 +17,9 @@ import {
 } from 'recharts';
 
 const StatisticsPage: React.FC = () => {
-    useAuth();
+    const { isAdmin } = useAuth();
     const [loading, setLoading] = useState(true);
+    const [downloading, setDownloading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [photos, setPhotos] = useState<Photo[]>([]);
 
@@ -64,6 +65,43 @@ const StatisticsPage: React.FC = () => {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    const downloadAnonymizedReport = async () => {
+        setDownloading(true);
+        setError(null);
+        try {
+            const startTimestamp = Math.floor(new Date(startDate).getTime() / 1000);
+            const endTimestamp = Math.floor(new Date(endDate).getTime() / 1000) + 86399;
+
+            const queryParams = new URLSearchParams();
+            queryParams.append('start', startTimestamp.toString());
+            queryParams.append('end', endTimestamp.toString());
+
+            const response = await apiFetch(`/photos/anonymized/export?${queryParams.toString()}`);
+            if (!response.ok) {
+                throw new Error('Failed to download anonymized report');
+            }
+
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            const contentDisposition = response.headers.get('Content-Disposition') ?? '';
+            const filenameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+            const filename = filenameMatch?.[1] ?? 'anonymized_dataset.json';
+
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(objectUrl);
+        } catch (err) {
+            console.error('Error downloading anonymized report:', err);
+            setError('Failed to download anonymized report');
+        } finally {
+            setDownloading(false);
+        }
+    };
 
     // Process data for charts
     const getControlStats = () => {
@@ -195,6 +233,15 @@ const StatisticsPage: React.FC = () => {
                 >
                     Refresh
                 </button>
+                {isAdmin && (
+                    <button
+                        onClick={downloadAnonymizedReport}
+                        disabled={downloading}
+                        className="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed mb-[1px]"
+                    >
+                        {downloading ? 'Downloading...' : 'Download Anonymized Report'}
+                    </button>
+                )}
             </div>
 
             {loading ? (

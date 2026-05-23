@@ -44,6 +44,7 @@ func InitPhotoRoutes(db *gorm.DB, ocrClient *gosseract.Client, mux *http.ServeMu
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})))
+	mux.Handle("/photos/anonymized/export", withAuth(http.HandlerFunc(photoController.DownloadAnonymizedDataset)))
 	mux.Handle("/photos/all", withAuth(http.HandlerFunc(photoController.DeleteAllPhotos)))
 	mux.Handle("/photos/", withAuth(http.HandlerFunc(photoController.HandlePhotoByID)))
 }
