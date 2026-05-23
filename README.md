@@ -36,17 +36,13 @@ The system is uniquely equipped with an **AI Governance engine** that audits arc
 
 ## 🏗️ System Architecture
 
-The project follows a microservices-inspired architecture containerized with Docker:
+The project follows a microservices-inspired architecture containerized with Docker, partitioned into a core application flow and an automated AI governance pipeline.
 
-```mermaid
-graph TD
-    A[Mobile App] -- "mTLS / MQTT" --> B(Mosquitto Broker)
-    B -- "mTLS" --> C[Go Backend Server]
-    C -- "gRPC / mTLS" --> D[OCR Service]
-    C -- "SQL" --> E[(PostgreSQL)]
-    F[React Web Dashboard] -- "HTTP / JWT" --> C
-    G[AI Governance Engine] -- "Audit / RBAC" --> H[Project Workspace]
-```
+### 📱 Primary Application Flow
+![Primary Application Flow](assets/app_flow.png)
+
+### 🤖 AI Governance & Secure Pipeline (The 5-Plan Strategy)
+![AI Governance Strategy](assets/ai_governance.png)
 
 ---
 
