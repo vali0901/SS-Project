@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_call:
 
 permissions:
   contents: read
@@ -30,6 +31,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.24"
+          cache-dependency-path: web/server/go.sum
 
       - name: Go build
         working-directory: web/server
@@ -44,14 +46,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: go-test-results
-          path: server/test-results.txt
+          path: web/server/test-results.txt
 
       - name: Upload Go coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: go-coverage
-          path: server/coverage.out
+          path: web/server/coverage.out
  
       # React/Vite frontend
       - name: Setup Node.js
