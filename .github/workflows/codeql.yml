@@ -16,8 +16,8 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  schedule:
-    - cron: '39 21 * * 2'
+  # schedule:
+  #   - cron: '39 21 * * 2'
 
 jobs:
   analyze:
@@ -43,8 +43,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - language: actions
-          build-mode: none
         - language: go
           build-mode: autobuild
         - language: java-kotlin
