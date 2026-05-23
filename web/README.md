@@ -220,7 +220,7 @@ server/
 
 ## Scripturi pentru Încărcarea Imaginilor
 
-### Script: `send_image.py` - Trimitere imagine individuală - la acest laborator vom trimite asa pozele, ulterior se vor trimite prin esp-cam si prin aplicatia android
+### Script: `send_image.py` - Trimitere imagine individuală - la acest laborator vom trimite asa pozele, ulterior se vor trimite prin aplicația android
 
 Acest script permite trimiterea unei singure imagini prin MQTT către server.
 
