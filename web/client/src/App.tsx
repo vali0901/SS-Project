@@ -67,7 +67,7 @@ const Layout = () => {
           <div className="flex items-center gap-2">
             <span>Security of Systems - Fetitele Powerpuff</span>
             {isAdmin && (
-              <span className="bg-red-100 text-red-600 text-[10px] px-1.5 py-0.5 rounded border border-red-200 font-black uppercase tracking-widest">
+              <span className="bg-green-100 text-green-600 text-[10px] px-1.5 py-0.5 rounded border border-green-200 font-black uppercase tracking-widest">
                 Admin
               </span>
             )}
