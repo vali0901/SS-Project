@@ -100,7 +100,7 @@ class MqttHandler(
     fun isConnected(): Boolean {
         return client?.isConnected == true
     }
--0
+
     suspend fun publishImage(imageBytes: ByteArray, qos: Int = 0): Boolean {
         return withContext(Dispatchers.IO) {
             if (!isConnected()) {

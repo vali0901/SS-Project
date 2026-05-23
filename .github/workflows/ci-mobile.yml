@@ -4,15 +4,26 @@ on:
   push:
     branches: [ "main" ]
     tags: [ "v*" ]
+    paths:
+      - ".github/workflows/ci-mobile.yml"
+      - "mobile/**"
+      - "web/scripts/gen-ca.sh"
+      - "web/scripts/gen-android-stores.sh"
   pull_request:
     branches: [ "main" ]
+    paths:
+      - ".github/workflows/ci-mobile.yml"
+      - "mobile/**"
+      - "web/scripts/gen-ca.sh"
+      - "web/scripts/gen-android-stores.sh"
 
 jobs:
-  unit_tests:
-    name: Build, Test and Release APK
+  mobile_checks:
+    name: Build and Test APK
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     permissions:
-      contents: write
+      contents: read
     defaults:
       run:
         working-directory: mobile
@@ -47,7 +58,7 @@ jobs:
           semgrep --config p/default .
 
       - name: Run Unit Tests
-        run: ./gradlew test
+        run: ./gradlew testDebugUnitTest
 
       - name: Enable KVM
         run: |
@@ -66,10 +77,20 @@ jobs:
           ram-size: 2048M
           disk-size: 4096M
           working-directory: mobile
-          script: ./gradlew connectedAndroidTest
+          script: ./gradlew connectedDebugAndroidTest
 
       - name: Build APK (Debug)
         run: ./gradlew assembleDebug
+
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-test-reports
+          path: |
+            mobile/app/build/reports/tests/
+            mobile/app/build/reports/androidTests/
+            mobile/app/build/outputs/androidTest-results/
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -77,11 +98,25 @@ jobs:
           name: app-debug-apk
           path: mobile/app/build/outputs/apk/debug/app-debug.apk
 
+  release:
+    name: Release APK
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: mobile_checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download APK Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-debug-apk
+          path: artifacts
+
       - name: Create Github Release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
-          files: mobile/app/build/outputs/apk/debug/app-debug.apk
+          files: artifacts/app-debug.apk
           name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
