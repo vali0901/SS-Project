@@ -69,3 +69,42 @@ export interface ExpiringPerson {
   name: string;
   expiration_date: string;
 }
+
+export interface ProfessionFitEntry {
+  profession: string;
+  total: number;
+  fit_count: number;
+  fit_rate: number;
+}
+
+export interface FitByProfessionReport {
+  total_people: number;
+  total_fit_people: number;
+  professors_total: number;
+  professors_fit: number;
+  by_profession: ProfessionFitEntry[];
+}
+
+export interface OverdueEntry {
+  name: string;
+  profession: string;
+  expiration_date: string;
+  days_overdue: number;
+}
+
+export interface OverdueReport {
+  total_overdue_people: number;
+  entries: OverdueEntry[];
+}
+
+export interface MonthlyCompliancePoint {
+  month: string;
+  completed_documents: number;
+  fit_documents: number;
+  overdue_documents: number;
+  expiring_next_month_documents: number;
+}
+
+export interface MonthlyComplianceTrendReport {
+  points: MonthlyCompliancePoint[];
+}

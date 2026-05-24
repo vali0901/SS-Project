@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContextState';
 import { apiFetch } from '../../utils/api';
-import type { Photo, PerformanceMetrics, MedicalInsights } from '../../types/photo';
+import type {
+    Photo,
+    PerformanceMetrics,
+    MedicalInsights,
+    FitByProfessionReport,
+    OverdueReport,
+    MonthlyComplianceTrendReport,
+} from '../../types/photo';
 import {
     BarChart,
     Bar,
@@ -26,6 +33,9 @@ const StatisticsPage: React.FC = () => {
     const [photos, setPhotos] = useState<Photo[]>([]);
     const [performance, setPerformance] = useState<PerformanceMetrics | null>(null);
     const [medicalInsights, setMedicalInsights] = useState<MedicalInsights | null>(null);
+    const [fitByProfession, setFitByProfession] = useState<FitByProfessionReport | null>(null);
+    const [overdueReport, setOverdueReport] = useState<OverdueReport | null>(null);
+    const [monthlyComplianceTrend, setMonthlyComplianceTrend] = useState<MonthlyComplianceTrendReport | null>(null);
     const [showExpiryPopup, setShowExpiryPopup] = useState(false);
 
     const [controlChartType, setControlChartType] = useState<'bar' | 'pie'>('bar');
@@ -54,6 +64,9 @@ const StatisticsPage: React.FC = () => {
             const response = await apiFetch(`/photos?${queryParams.toString()}`);
             const performanceResponse = await apiFetch(`/photos/performance?${queryParams.toString()}`);
             const medicalInsightsResponse = await apiFetch('/photos/medical-insights');
+            const fitByProfessionResponse = await apiFetch(`/photos/reports/fit-by-profession?${queryParams.toString()}`);
+            const overdueResponse = await apiFetch('/photos/reports/overdue');
+            const monthlyComplianceResponse = await apiFetch(`/photos/reports/monthly-compliance?${queryParams.toString()}`);
             const brokerInfoResponse = await apiFetch('/broker-info');
 
             if (!response.ok) {
@@ -65,6 +78,15 @@ const StatisticsPage: React.FC = () => {
             if (!medicalInsightsResponse.ok) {
                 throw new Error('Failed to fetch medical insights data');
             }
+            if (!fitByProfessionResponse.ok) {
+                throw new Error('Failed to fetch fit-by-profession report');
+            }
+            if (!overdueResponse.ok) {
+                throw new Error('Failed to fetch overdue report');
+            }
+            if (!monthlyComplianceResponse.ok) {
+                throw new Error('Failed to fetch monthly compliance trend report');
+            }
             if (!brokerInfoResponse.ok) {
                 throw new Error('Failed to fetch broker info');
             }
@@ -72,10 +94,16 @@ const StatisticsPage: React.FC = () => {
             const data = await response.json();
             const performanceData = await performanceResponse.json();
             const medicalInsightsData = await medicalInsightsResponse.json();
+            const fitByProfessionData = await fitByProfessionResponse.json();
+            const overdueData = await overdueResponse.json();
+            const monthlyComplianceData = await monthlyComplianceResponse.json();
             const brokerInfoData = await brokerInfoResponse.json();
             setPhotos(Array.isArray(data) ? data : []);
             setPerformance(performanceData);
             setMedicalInsights(medicalInsightsData);
+            setFitByProfession(fitByProfessionData);
+            setOverdueReport(overdueData);
+            setMonthlyComplianceTrend(monthlyComplianceData);
             setServerInstanceId(brokerInfoData.server_instance_id || 'unknown');
         } catch (err) {
             console.error('Error fetching stats data:', err);
@@ -185,6 +213,7 @@ const StatisticsPage: React.FC = () => {
 
     const controlData = getControlStats();
     const avizData = getAvizStats();
+    const monthlyComplianceData = monthlyComplianceTrend?.points ?? [];
     const expiringNames = medicalInsights?.expiring_next_month_names ?? [];
     const expiringEntries = medicalInsights?.expiring_next_month_entries ?? [];
 
@@ -441,6 +470,109 @@ const StatisticsPage: React.FC = () => {
                                 </span>
                                 <span className="block text-xs text-sky-600 mt-1">medicina muncii records across accessible documents</span>
                             </div>
+                        </div>
+                    </div>
+
+                    <div className="col-span-1 md:col-span-2 bg-white p-6 rounded-lg shadow-md border border-emerald-200">
+                        <h3 className="text-lg font-medium text-gray-800 mb-4">Fit by Profession</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                            <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
+                                <span className="block text-sm text-emerald-700 font-medium">Total People</span>
+                                <span className="block text-2xl font-bold text-emerald-900">{fitByProfession?.total_people ?? 0}</span>
+                            </div>
+                            <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                                <span className="block text-sm text-green-700 font-medium">Total Fit People</span>
+                                <span className="block text-2xl font-bold text-green-900">{fitByProfession?.total_fit_people ?? 0}</span>
+                            </div>
+                            <div className="bg-lime-50 p-4 rounded-lg border border-lime-100">
+                                <span className="block text-sm text-lime-700 font-medium">Professors Fit</span>
+                                <span className="block text-2xl font-bold text-lime-900">
+                                    {fitByProfession?.professors_fit ?? 0} / {fitByProfession?.professors_total ?? 0}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+                                <thead className="bg-gray-50 text-gray-700">
+                                    <tr>
+                                        <th className="px-3 py-2 text-left">Profession</th>
+                                        <th className="px-3 py-2 text-right">Total</th>
+                                        <th className="px-3 py-2 text-right">Fit</th>
+                                        <th className="px-3 py-2 text-right">Fit Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(fitByProfession?.by_profession ?? []).map((entry) => (
+                                        <tr key={entry.profession} className="border-t border-gray-100">
+                                            <td className="px-3 py-2">{entry.profession}</td>
+                                            <td className="px-3 py-2 text-right">{entry.total}</td>
+                                            <td className="px-3 py-2 text-right">{entry.fit_count}</td>
+                                            <td className="px-3 py-2 text-right">{entry.fit_rate.toFixed(1)}%</td>
+                                        </tr>
+                                    ))}
+                                    {(fitByProfession?.by_profession ?? []).length === 0 && (
+                                        <tr>
+                                            <td className="px-3 py-3 text-gray-500" colSpan={4}>No profession data available in selected range.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="col-span-1 md:col-span-2 bg-white p-6 rounded-lg shadow-md border border-rose-200">
+                        <h3 className="text-lg font-medium text-gray-800 mb-4">Overdue Medical Checks</h3>
+                        <div className="bg-rose-50 p-4 rounded-lg border border-rose-100 mb-4">
+                            <span className="block text-sm text-rose-700 font-medium">Total Overdue People</span>
+                            <span className="block text-2xl font-bold text-rose-900">{overdueReport?.total_overdue_people ?? 0}</span>
+                        </div>
+
+                        <div className="overflow-x-auto max-h-72">
+                            <table className="min-w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+                                <thead className="bg-gray-50 text-gray-700 sticky top-0">
+                                    <tr>
+                                        <th className="px-3 py-2 text-left">Name</th>
+                                        <th className="px-3 py-2 text-left">Profession</th>
+                                        <th className="px-3 py-2 text-left">Expiration Date</th>
+                                        <th className="px-3 py-2 text-right">Days Overdue</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {(overdueReport?.entries ?? []).map((entry) => (
+                                        <tr key={`${entry.name}-${entry.expiration_date}`} className="border-t border-gray-100">
+                                            <td className="px-3 py-2">{entry.name}</td>
+                                            <td className="px-3 py-2">{entry.profession}</td>
+                                            <td className="px-3 py-2">{formatExpiryDate(entry.expiration_date)}</td>
+                                            <td className="px-3 py-2 text-right font-semibold text-rose-700">{entry.days_overdue}</td>
+                                        </tr>
+                                    ))}
+                                    {(overdueReport?.entries ?? []).length === 0 && (
+                                        <tr>
+                                            <td className="px-3 py-3 text-gray-500" colSpan={4}>No overdue checks detected.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="col-span-1 md:col-span-2 bg-white p-6 rounded-lg shadow-md border border-violet-200">
+                        <h3 className="text-lg font-medium text-gray-800 mb-4">Monthly Compliance Trend</h3>
+                        <div className="h-[340px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={monthlyComplianceData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="month" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar dataKey="completed_documents" fill="#0ea5e9" name="Completed" />
+                                    <Bar dataKey="fit_documents" fill="#16a34a" name="Fit" />
+                                    <Bar dataKey="overdue_documents" fill="#e11d48" name="Overdue" />
+                                    <Bar dataKey="expiring_next_month_documents" fill="#f59e0b" name="Expiring Next Month" />
+                                </BarChart>
+                            </ResponsiveContainer>
                         </div>
                     </div>
                 </div>
