@@ -142,5 +142,17 @@ func main() {
 		}
 	}()
 
+	go func() {
+		fmt.Println("Starting HTTPS server on port 8443...")
+		if err := http.ListenAndServeTLS(
+			":8443",
+			"/run/secrets/server.crt",
+			"/run/secrets/server.key",
+			handler,
+		); err != nil {
+			panic(err)
+		}
+	}()
+
 	<-c
 }

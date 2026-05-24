@@ -18,8 +18,8 @@ import ro.pub.cs.systems.ssproject.mqtt.MqttConstants
 import ro.pub.cs.systems.ssproject.ui.dashboard.MainActivity
 import ro.pub.cs.systems.ssproject.R
 import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
 import java.net.URL
+import javax.net.ssl.HttpsURLConnection
 
 class SetupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -110,7 +110,7 @@ class SetupActivity : ComponentActivity() {
 
     private suspend fun login(serverIp: String, email: String, password: String): String? {
         return withContext(Dispatchers.IO) {
-            val connection = (URL("http://$serverIp:8080/login").openConnection() as HttpURLConnection).apply {
+            val connection = (URL("https://$serverIp:8443/login").openConnection() as HttpsURLConnection).apply {
                 requestMethod = "POST"
                 connectTimeout = 10000
                 readTimeout = 10000
@@ -128,7 +128,7 @@ class SetupActivity : ComponentActivity() {
                     it.write(payload)
                 }
 
-                if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                if (connection.responseCode != HttpsURLConnection.HTTP_OK) {
                     return@withContext null
                 }
 

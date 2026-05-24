@@ -121,16 +121,12 @@ func (ctlr UserController) Register(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		fmt.Printf("Error saving user %s: %v\n", req.Email, err)
+		fmt.Printf("Error saving user: %v\n", err)
 		http.Error(w, "Failed to save user", http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Printf(
-		"User registered successfully: %s (role: %s)\n",
-		req.Email,
-		role,
-	)
+	fmt.Printf("User registered successfully (role: %s)\n", role)
 
 	w.WriteHeader(http.StatusCreated)
 
@@ -158,14 +154,14 @@ func (ctlr UserController) Login(w http.ResponseWriter, r *http.Request) {
 	// Check if the user exists
 	user, err := ctlr.UserRepository.FindByEmail(r.Context(), req.Email)
 	if err != nil {
-		fmt.Printf("Login failed: user %s not found\n", req.Email)
+		fmt.Println("Login failed: user not found")
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
 
 	// Verify the password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		fmt.Printf("Login failed: invalid password for user %s\n", req.Email)
+		fmt.Println("Login failed: invalid password")
 		http.Error(w, "Invalid email or password", http.StatusUnauthorized)
 		return
 	}
@@ -173,12 +169,12 @@ func (ctlr UserController) Login(w http.ResponseWriter, r *http.Request) {
 	// Generate JWT token using shared utility
 	tokenString, err := utils.GenerateToken(user.Email, user.Role)
 	if err != nil {
-		fmt.Printf("Error generating token for %s: %v\n", user.Email, err)
+		fmt.Printf("Error generating token: %v\n", err)
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Printf("User logged in successfully: %s (role: %s)\n", user.Email, user.Role)
+	fmt.Printf("User logged in successfully (role: %s)\n", user.Role)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
 		"token": tokenString,
