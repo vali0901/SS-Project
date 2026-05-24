@@ -45,7 +45,7 @@ func NewTLSConfig() *tls.Config {
 
 func main() {
 	// Connect to PostgreSQL using GORM
-	dsn := fmt.Sprintf("host=postgres-db user=%s password=%s dbname=%s port=5432 sslmode=disable",
+	dsn := fmt.Sprintf("host=postgres-db user=%s password=%s dbname=%s port=5432 sslmode=verify-full sslrootcert=/run/secrets/ca.crt",
 		os.Getenv("POSTGRES_USER"),
 		os.Getenv("POSTGRES_PASSWORD"),
 		os.Getenv("POSTGRES_DB"),
@@ -138,6 +138,18 @@ func main() {
 	go func() {
 		fmt.Println("Starting HTTP server on port 8080...")
 		if err := http.ListenAndServe(":8080", handler); err != nil {
+			panic(err)
+		}
+	}()
+
+	go func() {
+		fmt.Println("Starting HTTPS server on port 8443...")
+		if err := http.ListenAndServeTLS(
+			":8443",
+			"/run/secrets/server.crt",
+			"/run/secrets/server.key",
+			handler,
+		); err != nil {
 			panic(err)
 		}
 	}()

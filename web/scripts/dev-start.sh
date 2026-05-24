@@ -12,11 +12,14 @@ fi
 echo "Starting docker compose services..."
 cd "${ROOT_DIR}"
 
+echo "Ensuring TLS certificates exist..."
+./scripts/gen-ca.sh
+
 docker compose up -d --build
 
 echo "------------------------------------------------"
 echo "Services are starting..."
-echo "Vite Dev Server: http://localhost:5173"
-echo "Go API: http://localhost:8080"
+echo "Vite Dev Server: https://localhost:5173"
+echo "Go API: https://localhost:8443"
 echo "------------------------------------------------"
 echo "To view logs, run: docker compose logs -f"

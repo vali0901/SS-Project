@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # Setează directorul pentru secrete
 SECRETS_DIR="secrets"
 EMULATOR_IP="10.0.2.2"
@@ -13,6 +15,10 @@ server_cert_needs_regeneration() {
         return 0
     fi
 
+    if ! openssl x509 -in "$SECRETS_DIR/server.crt" -noout -ext subjectAltName 2>/dev/null | grep -q "DNS:go-api"; then
+        return 0
+    fi
+
     return 1
 }
 
@@ -22,8 +28,8 @@ if server_cert_needs_regeneration; then
 fi
 
 # Verifică dacă fișierele finale există deja și includ SAN-ul pentru emulatorul Android
-if [ -f "$SECRETS_DIR/ca.crt" ] && [ -f "$SECRETS_DIR/server.crt" ] && [ -f "$SECRETS_DIR/web.crt" ] && [ "$SERVER_CERT_NEEDS_REGENERATION" = false ]; then
-    echo "[INFO] Toate certificatele (CA, Server, Client) există deja în '$SECRETS_DIR/' și includ SAN-ul pentru emulator. Generarea a fost anulată."
+if [ -f "$SECRETS_DIR/ca.crt" ] && [ -f "$SECRETS_DIR/server.crt" ] && [ -f "$SECRETS_DIR/web.crt" ] && [ -f "$SECRETS_DIR/db.crt" ] && [ "$SERVER_CERT_NEEDS_REGENERATION" = false ]; then
+    echo "[INFO] Toate certificatele (CA, Server, Client, DB) există deja în '$SECRETS_DIR/' și includ SAN-urile necesare. Generarea a fost anulată."
     exit 0
 fi
 
@@ -50,6 +56,7 @@ fi
 # ---------------------------------------------------------------------
 if [ ! -f "server.key" ] || [ ! -f "server.crt" ] || [ "$SERVER_CERT_NEEDS_REGENERATION" = true ]; then
     echo "[+] Generare Certificat Server (cu SAN)..."
+    chmod u+w server.key server.crt 2>/dev/null || true
     openssl genrsa -out server.key 2048
     openssl req -new -key server.key -out server.csr \
         -subj "/C=RO/ST=Romania/L=Bucharest/O=SS-Web/OU=Broker/CN=broker"
@@ -62,6 +69,7 @@ subjectAltName = @alt_names
 [alt_names]
 DNS.1 = broker
 DNS.2 = localhost
+DNS.3 = go-api
 IP.1 = 127.0.0.1
 IP.2 = 10.0.2.2
 EOF
@@ -81,6 +89,7 @@ fi
 # ---------------------------------------------------------------------
 if [ ! -f "web.key" ] || [ ! -f "web.crt" ]; then
     echo "[+] Generare Certificat Client (Web cu SAN)..."
+    chmod u+w web.key web.crt 2>/dev/null || true
     openssl genrsa -out web.key 2048
     openssl req -new -key web.key -out web.csr \
         -subj "/C=RO/ST=Romania/L=Bucharest/O=SS-Web/OU=WebClient/CN=web"
@@ -110,6 +119,7 @@ fi
 # ---------------------------------------------------------------------
 if [ ! -f "ocr.key" ] || [ ! -f "ocr.crt" ]; then
     echo "[+] Generare Certificat OCR (cu SAN)..."
+    chmod u+w ocr.key ocr.crt 2>/dev/null || true
     openssl genrsa -out ocr.key 2048
     openssl req -new -key ocr.key -out ocr.csr \
         -subj "/C=RO/ST=Romania/L=Bucharest/O=SS-Web/OU=OCR/CN=ocr-service"
@@ -136,12 +146,40 @@ else
 fi
 
 # ---------------------------------------------------------------------
-# 5. Verificarea Certificatelor Generate
+# 5. Generarea Certificatului pentru PostgreSQL (Cu SAN)
+# ---------------------------------------------------------------------
+if [ ! -f "db.key" ] || [ ! -f "db.crt" ]; then
+    echo "[+] Generare Certificat PostgreSQL (cu SAN)..."
+    chmod u+w db.key db.crt 2>/dev/null || true
+    openssl genrsa -out db.key 2048
+    openssl req -new -key db.key -out db.csr \
+        -subj "/C=RO/ST=Romania/L=Bucharest/O=SS-Web/OU=Database/CN=postgres-db"
+
+    cat <<EOF > db_ext.cnf
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = postgres-db
+DNS.2 = localhost
+IP.1 = 127.0.0.1
+EOF
+
+    openssl x509 -req -days 365 -in db.csr -CA ca.crt -CAkey ca.key \
+        -CAcreateserial -out db.crt -extfile db_ext.cnf
+
+    rm -f db.csr db_ext.cnf
+else
+    echo "[~] Certificatul PostgreSQL există deja."
+fi
+
+# ---------------------------------------------------------------------
+# 6. Verificarea Certificatelor Generate
 # ---------------------------------------------------------------------
 echo -e "\n--- Verificare Certificate ---"
 openssl verify -CAfile ca.crt server.crt
 openssl verify -CAfile ca.crt web.crt
 openssl verify -CAfile ca.crt ocr.crt
+openssl verify -CAfile ca.crt db.crt
 
 # pt ocr
 chmod 444 *.crt

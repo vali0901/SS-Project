@@ -31,7 +31,7 @@ ss-web/
 | Broker MQTT | Eclipse Mosquitto |
 | Containerizare | Docker Compose |
 | Autentificare | JWT pentru API și înregistrarea dispozitivelor |
-| Securitate | MQTT peste mTLS (Mutual TLS) pe portul 8883 |
+| Securitate | TLS pentru frontend, frontend-backend, backend-PostgreSQL și MQTT peste mTLS pe portul 8883 |
 
 ---
 
@@ -77,9 +77,9 @@ MQTT_HOST_IP=192.168.1.95             # IP-ul host-ului pentru MQTT
 ```
 
 Acest script va:
-1. Instala dependențele client (yarn install)
-2. Porni containerele Docker (API, PostgreSQL, MQTT Broker)
-3. Porni serverul de development Vite
+1. Genera certificatele TLS lipsă în `secrets/`
+2. Porni containerele Docker (frontend, API, PostgreSQL, MQTT Broker, OCR)
+3. Servi frontend-ul prin HTTPS și proxy-ul `/api` către backend prin HTTPS
 
 **Metoda 2: Manual**
 
@@ -99,8 +99,9 @@ După pornire, aplicația va fi disponibilă la:
 
 | Serviciu | URL/Port |
 |----------|----------|
-| Frontend (Vite) | http://localhost:5173 |
-| Backend API | http://localhost:8080 |
+| Frontend (Vite HTTPS) | https://localhost:5173 |
+| Backend API HTTPS | https://localhost:8443 |
+| Backend API HTTP legacy | http://localhost:8080 |
 | PostgreSQL | localhost:5432 |
 | MQTT Broker (mTLS) | localhost:8883 |
 
@@ -122,7 +123,7 @@ docker compose down
 
 ### 1. Autentificare
 
-- Accesează http://localhost:5173
+- Accesează https://localhost:5173
 - Login sau înregistrează un cont nou
 - Autentificarea folosește JWT tokens
 
@@ -159,6 +160,19 @@ docker compose down
 ---
 
 ## Debugging
+
+### TLS local
+
+Certificatele sunt semnate de CA-ul local din `secrets/ca.crt`. Browserul poate afișa un avertisment până când acest CA este adăugat în trust store-ul local.
+
+Fluxurile TLS configurate:
+
+| Flux | Configurare |
+|------|-------------|
+| Browser -> Frontend | Vite servește HTTPS cu `web.crt`/`web.key` |
+| Frontend -> Backend | Proxy-ul Vite trimite `/api` către `https://go-api:8443` și validează `ca.crt` |
+| Backend -> PostgreSQL | GORM folosește `sslmode=verify-full` și `sslrootcert=/run/secrets/ca.crt` |
+| Mobile/Backend -> MQTT | MQTT folosește mTLS pe portul `8883` |
 
 ### Verificare containere Docker
 
