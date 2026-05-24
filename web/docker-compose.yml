@@ -27,6 +27,8 @@ services:
       - web.key
       - server.crt
       - server.key
+      - db.crt
+      - db.key
       - encryption.key
 
   client:
@@ -42,6 +44,10 @@ services:
       - backend
     depends_on:
       - go-api
+    secrets:
+      - ca.crt
+      - web.crt
+      - web.key
 
   broker:
     user: "${UID}:${GID}"
@@ -97,6 +103,19 @@ services:
       - postgres-data:/var/lib/postgresql/data
     networks:
       - backend
+    secrets:
+      - ca.crt
+      - db.crt
+      - db.key
+    entrypoint:
+      - sh
+      - -c
+      - |
+        cp /run/secrets/db.crt /tmp/db.crt
+        cp /run/secrets/db.key /tmp/db.key
+        chown postgres:postgres /tmp/db.crt /tmp/db.key
+        chmod 600 /tmp/db.key
+        exec docker-entrypoint.sh postgres -c ssl=on -c ssl_cert_file=/tmp/db.crt -c ssl_key_file=/tmp/db.key
 
 volumes:
   postgres-data:
@@ -119,5 +138,9 @@ secrets:
     file: ./secrets/ocr.crt
   ocr.key:
     file: ./secrets/ocr.key
+  db.crt:
+    file: ./secrets/db.crt
+  db.key:
+    file: ./secrets/db.key
   encryption.key:
     file: ./secrets/encryption.key

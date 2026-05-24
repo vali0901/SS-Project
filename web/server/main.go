@@ -45,7 +45,7 @@ func NewTLSConfig() *tls.Config {
 
 func main() {
 	// Connect to PostgreSQL using GORM
-	dsn := fmt.Sprintf("host=postgres-db user=%s password=%s dbname=%s port=5432 sslmode=disable",
+	dsn := fmt.Sprintf("host=postgres-db user=%s password=%s dbname=%s port=5432 sslmode=verify-full sslrootcert=/run/secrets/ca.crt",
 		os.Getenv("POSTGRES_USER"),
 		os.Getenv("POSTGRES_PASSWORD"),
 		os.Getenv("POSTGRES_DB"),

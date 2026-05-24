@@ -41,6 +41,6 @@ WORKDIR /app
 # 5. Copy the binary from the builder stage
 COPY --from=builder /app/mqtt /app/
 
-EXPOSE 8080
+EXPOSE 8080 8443
 
 CMD ["./mqtt"]
