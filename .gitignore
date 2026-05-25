@@ -23,3 +23,5 @@ secrets/
 mobile/app/src/main/res/raw/ca.crt
 mobile/app/src/main/res/raw/mtls_keystore.p12
 mobile/app/src/main/res/raw/mtls_truststore.p12
+
+*.log
